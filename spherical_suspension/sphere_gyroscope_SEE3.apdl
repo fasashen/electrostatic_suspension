@@ -1,0 +1,289 @@
+FINISH
+/CLEAR,NOSTART
+
+/input, ../config.py
+/input, ../cap_vs_gap_data.txt
+
+*dim, gap_ar,array,num_calcs
+*dim,f_top_x,array,num_calcs
+*dim,f_top_y,array,num_calcs
+*dim,f_top_z,array,num_calcs
+*dim,f_bot_x,array,num_calcs
+*dim,f_bot_y,array,num_calcs
+*dim,f_bot_z,array,num_calcs
+
+
+/PREP7
+btol, 1.0e-7
+
+! Materials and Elements definition
+
+    et,110,TRANS126,,1,1
+    keyopt,110,2,1    ! degree-of-freedom set: UX-VOLT
+    keyopt,110,3,1    ! Use capacitance versus C0, C1
+    keyopt,110,6,1    ! Full stiffness method
+    R,110,,,d,min_gap,stiff
+    RMORE,GAP1,CAP1,GAP2,CAP2,GAP3,CAP3
+    RMORE,GAP4,CAP4,GAP5,CAP5,GAP6,CAP6
+    RMORE,GAP7,CAP7,GAP8,CAP8,GAP9,CAP9
+    RMORE,GAP10,CAP10,GAP11,CAP11,GAP12,CAP12
+    RMORE,GAP13,CAP13,GAP14,CAP14,GAP15,CAP15
+    RMORE,GAP16,CAP16,GAP17,CAP17,GAP18,CAP18
+    ! RMORE,GAP19,CAP19,GAP20,CAP20
+
+    et,120,TRANS126,,2,1
+    keyopt,120,2,2    ! degree-of-freedom set: UY-VOLT
+    keyopt,120,3,1    ! Use capacitance versus C0, C1
+    keyopt,120,6,1    ! Full stiffness method
+    R,120,,,d,min_gap,stiff
+    RMORE,GAP1,CAP1,GAP2,CAP2,GAP3,CAP3
+    RMORE,GAP4,CAP4,GAP5,CAP5,GAP6,CAP6
+    RMORE,GAP7,CAP7,GAP8,CAP8,GAP9,CAP9
+    RMORE,GAP10,CAP10,GAP11,CAP11,GAP12,CAP12
+    RMORE,GAP13,CAP13,GAP14,CAP14,GAP15,CAP15
+    RMORE,GAP16,CAP16,GAP17,CAP17,GAP18,CAP18
+    ! RMORE,GAP19,CAP19,GAP20,CAP20
+
+    et,130,TRANS126,,3,1
+    keyopt,130,2,3    ! degree-of-freedom set: UZ-VOLT
+    keyopt,130,3,1    ! Use capacitance versus C0, C1
+    keyopt,130,6,1    ! Full stiffness method
+    R,130,,,d,min_gap,stiff
+    RMORE,GAP1,CAP1,GAP2,CAP2,GAP3,CAP3
+    RMORE,GAP4,CAP4,GAP5,CAP5,GAP6,CAP6
+    RMORE,GAP7,CAP7,GAP8,CAP8,GAP9,CAP9
+    RMORE,GAP10,CAP10,GAP11,CAP11,GAP12,CAP12
+    RMORE,GAP13,CAP13,GAP14,CAP14,GAP15,CAP15
+    RMORE,GAP16,CAP16,GAP17,CAP17,GAP18,CAP18
+    ! RMORE,GAP19,CAP19,GAP20,CAP20
+
+    ! Creating curcuit elements
+    et,102,CIRCU124,0,,,,,   ! DEFINE A RESISTOR
+    r,102,res                       
+
+    et,103,CIRCU124,1,,,,,   ! DEFINE AN INDUCTOR
+    r,103,ind
+
+    et,104,CIRCU124,4,1,,,,  ! DEFINE A VOLTAGE SOURCE
+    r,104,0,V_amp,V_freq
+
+    et,200,mass21
+    r,200,mass
+
+! Geometry
+    nsel,all
+    cm,sphere_nodes,node
+    n,100,0,0,0 ! master node
+
+    n,110, a, 0, 0 
+    n,111,-a, 0, 0
+    n,120, 0, a, 0 
+    n,121, 0,-a, 0
+    n,130, 0, 0, a 
+    n,131, 0, 0,-a
+
+! Generating trans126 elements
+
+    n,210, a+d,   0,   0
+    n,211,-a-d,   0,   0
+    n,220,   0, a+d,   0
+    n,221,   0,-a-d,   0
+    n,230,   0,   0, a+d
+    n,231,   0,   0,-a-d
+    
+
+! Creating tran126 elements    
+    type,110
+    real,110
+    e,110,210
+    e,211,111
+
+    type,120
+    real,120
+    e,120,220
+    e,221,121
+
+    type,130
+    real,130
+    e,130,230
+    e,231,131
+
+! Mass element
+    type,200
+    real,200
+    e,100
+
+! Cerig definition
+    nsel,s,,,110,111
+    nsel,a,,,100
+    cerig,100,all,ux
+
+    nsel,s,,,120,121
+    nsel,a,,,100
+    cerig,100,all,uy
+
+    nsel,s,,,130,131
+    nsel,a,,,100
+    cerig,100,all,uz
+    nsel,all
+
+! Couplings all rotor electrodes VOLT dof
+    nsel,s,,,110,131
+    cp,101,volt,all
+    nsel,all
+    alls
+
+! Preparing for circuit definition
+    N,310,  a+d,    0,  2*a
+    N,320,  2*a,  a+d,    0
+    N,330,    0,  2*a,  a+d
+
+    N,311, -a-d,    0,  2*a
+    N,321,  2*a, -a-d,    0
+    N,331,    0,  2*a, -a-d
+
+! Circuit definition
+    ! Inductors
+        type,103
+        real,103
+        e,210,310
+        e,220,320
+        e,230,330
+    ! Resistors
+        type,102
+        real,102
+        e,310,311
+        e,320,321
+        e,330,331
+    ! Voltage sources
+        type,104
+        real,104
+        e,311,211,100
+        e,321,221,100
+        e,331,231,100
+
+
+
+! DOF Constraints
+    nsel,s,,,100 ! Hold rotor at first step
+    d,all,ux,0
+    d,all,uy,0
+    d,all,uz,0
+    d,all,rotx,0
+    d,all,roty,0
+    d,all,rotz,0
+
+    nsel,s,,,210,231  ! Outer electrodes nodes
+    d,all,ux,0
+    d,all,uy,0
+    d,all,uz,0
+
+    nsel,s,,,231
+    nsel,a,,,211
+    nsel,a,,,221
+    d,all,volt,0
+    nsel,all
+
+alls
+finish
+
+! Solution
+    /solu
+    ! ncnv,0,1e100 !Do not terminate the analysis if the solution fails to converge.
+    antype,trans
+    cnvtol,AMPS,1,1e-3
+    cnvtol,u,1,1e-7
+    outres,all,all
+    timint,on
+    autots,off
+    deltim,dt
+    time,time_hold
+    kbc,1
+    solve
+
+    ddele,100,ux
+    ddele,100,uy
+    ddele,100,uz
+    antype,trans
+
+    ! acel,g
+
+    cnvtol,AMPS,1,1e-3
+    cnvtol,u,1,1e-8
+    cnvtol,F,1,1e-7
+    outres,all,all
+    timint,on
+    autots,off
+    deltim,dt
+    time,time
+    kbc,1
+    solve
+
+    finish
+
+/post26
+    numvar,1000
+    nsol,101, 100 , ux,master_x
+    nsol,102, 100 , uy,master_y
+    nsol,103, 100 , uz,master_z
+
+    NSOL,111,111,VOLT,, VOLT_111,
+    NSOL,113,211,VOLT,, VOLT_211,
+
+    NSOL,110,110,VOLT,, VOLT_110,
+    NSOL,112,210,VOLT,, VOLT_210,
+
+    ESOL,120,1,110 ,F,X,FX_pos
+    ESOL,121,2,111 ,F,X,Fx_neg
+
+    store,merge
+    LINES,1e6,
+    /HEADER, OFF, OFF, OFF, OFF, OFF, OFF
+    /OUTPUT,bulk,txt
+    /OUTPUT
+
+    /OUTPUT,master_UX,txt
+        PRVAR,101  
+    /OUTPUT
+    /OUTPUT,master_UY,txt
+        PRVAR,102  
+    /OUTPUT
+    /OUTPUT,master_UZ,txt
+        PRVAR,103  
+    /OUTPUT
+
+    /OUTPUT,Volt_111,txt
+        PRVAR,111
+    /OUTPUT
+    /OUTPUT,Volt_211,txt
+        PRVAR,113
+    /OUTPUT
+
+    /OUTPUT,Volt_110,txt
+        PRVAR,110
+    /OUTPUT
+
+    /OUTPUT,Volt_210,txt
+        PRVAR,112
+    /OUTPUT
+
+
+    /OUTPUT,Fx_pos,txt
+        PRVAR,120
+    /OUTPUT
+    /OUTPUT,Fx_neg,txt
+        PRVAR,121
+    /OUTPUT
+    finish
+
+!     PARSAV,ALL,PARAM_FILE,TXT
+!     /CLEAR,NOSTART
+!     PARRES,NEW,PARAM_FILE,TXT
+!     save
+
+! *enddo
+
+! *CFOPEN,forces_top_bot,TXT
+! *VWRITE,f_top_x(1),f_top_y(1),f_top_z(1),f_bot_x(1),f_bot_y(1),f_bot_z(1)
+! (F30.25,' ',F30.25,' ',F30.25,' ',F30.25,' ',F30.25,' ',F30.25)
+! *CFCLOS

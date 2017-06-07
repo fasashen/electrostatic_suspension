@@ -1,0 +1,379 @@
+FINISH
+/CLEAR,NOSTART
+
+/input, ../config.py
+/input, ../params.txt
+
+*dim, gap_ar,array,num_calcs
+*dim,f_top_x,array,num_calcs
+*dim,f_top_y,array,num_calcs
+*dim,f_top_z,array,num_calcs
+*dim,f_bot_x,array,num_calcs
+*dim,f_bot_y,array,num_calcs
+*dim,f_bot_z,array,num_calcs
+
+num_calcs = 1
+
+! *do,i,1,num_calcs
+    i = 1
+    /PREP7
+
+    btol, 1.0e-6
+    offs = d_min + (I-1)*d_inc
+    offs = 0
+
+    ! Materials and Elements definition
+        mp,ex,100,2e6
+        et,100,sphere_eltype,1
+
+        EPS_R = 1           ! relative permittivity
+        E = 154e3           ! Young modulus of polysilicon in muMKSV (160 GPa)
+        rho = 2328*1e-18
+        gam = 0.22
+        MP,EX,1,E
+        MP,DENS,1,rho
+        MP,PRXY,1,gam
+
+        SECTYPE,,SHELL
+        SECDATA,d/20,
+
+        et,101,TRANS126,,1,0,,,0
+        keyopt,101,2,1    ! degree-of-freedom set: UX-VOLT
+        keyopt,101,3,0    ! Use capacitance versus C0, C1
+        keyopt,101,6,0    ! Full stiffness method
+        R,101,0,0,d,,,
+        RMORE,C0/609,
+
+        ! Creating curcuit elements
+        et,102,CIRCU124,0,,,,,   ! DEFINE A RESISTOR
+        r,102,res                       
+
+        et,103,CIRCU124,1,,,,,   ! DEFINE AN INDUCTOR
+        r,103,ind
+
+        et,104,CIRCU124,4,1,,,,  ! DEFINE A VOLTAGE SOURCE
+        r,104,0,V_amp,V_freq
+
+        et,200,mass21
+        r,200,mass
+
+    ! Geometry
+        sphere, 0, a,
+        cm,sphere,area
+        asel,all
+        asel,inve
+
+        block, -b,b, -b,b, -b,b
+        cm,block,area
+        asel,all
+
+        asba,sphere,block,,,dele
+        vdele,2,,,1
+
+        asel,all
+        cm,sphere,area
+        asel,none
+        k,101, a,-a, 0
+        k,102, a, a, 0
+        k,103,-a, a, 0
+        k,104,-a,-a, 0
+        a,101,102,103,104
+        k,111, 0, a,-a
+        k,112, 0, a, a
+        k,113, 0,-a, a
+        k,114, 0,-a,-a
+        a,111,112,113,114
+        cm,planes,area
+        asel,all
+        asba,sphere,planes,,,dele
+
+        asel,s,,,39,46
+        cm,body,area
+        asel,inve
+
+    ! Meshing
+        cmsel,s,body
+        asel,inve
+        lsla
+        lesize,all,,,elnum
+        lsel,inve
+        lesize,all,,,elnum/2
+        alls
+        numstr,node,10000
+        mat,100
+        type,100
+        amesh,all
+
+    ! Couplings all ball's dofs
+        nsel,all
+        cm,sphere_nodes,node
+        n,100,0,0,0
+
+    ! Components assignation 2 (nodes sets)
+        master_x_pos = node(a,0,0)
+        master_x_neg = node(-a,0,0)
+        master_y_pos = node(0,a,0)
+        master_y_neg = node(0,-a,0)
+        master_z_pos = node(0,0,a)
+        master_z_neg = node(0,0,-a)
+
+        nsel,s,,,master_x_pos
+        cm,side101n,node
+        nsel,s,,,master_x_neg
+        cm,side102n,node
+        nsel,s,,,master_y_pos
+        cm,side103n,node
+        nsel,s,,,master_y_neg
+        cm,side104n,node
+        nsel,s,,,master_z_pos
+        cm,top100n,node
+        nsel,s,,,master_z_neg
+        cm,bot100n,node        
+
+    ! Connecting master node and sphere
+        asel,all
+        alls
+        cerig,100,all,all
+        alls
+
+    ! Generating trans126 elements
+        csys,2
+        nsel,all
+        nrotat,all
+        emtgen,'side101n','side201e','side201n','UX',  d, min_gap, stiff, eps0
+        emtgen,'side102n','side202e','side202n','UX',  d, min_gap, stiff, eps0
+        emtgen,'side103n','side203e','side203n','UX',  d, min_gap, stiff, eps0
+        emtgen,'side104n','side204e','side204n','UX',  d, min_gap, stiff, eps0
+        emtgen, 'top100n', 'top200e', 'top200n','UX',  d-offs, min_gap, stiff, eps0
+        emtgen, 'bot100n', 'bot200e', 'bot200n','UX',  d+offs, min_gap, stiff, eps0
+
+        esel,s,ename,,126
+        emodif,all,type,101
+        emodif,all,real,101
+
+        cmsel,s, side201n
+        cmsel,a, side202n
+        cmsel,a, side203n
+        cmsel,a, side204n
+        cmsel,a, top200n
+        cmsel,a, bot200n
+        nrotat,all
+                    
+    alls
+
+    ! Creates voltage couplings on electrodes and defining master nodes
+        cmsel,s, side201n
+        *get,master_side201,node,0,num,min
+
+        cmsel,s, side202n
+        *get,master_side202,node,0,num,min
+
+        cmsel,s, side203n
+        *get,master_side203,node,0,num,min
+
+        cmsel,s, side204n
+        *get,master_side204,node,0,num,min
+
+        cmsel,s, bot200n
+        *get,master_bot200,node,0,num,min
+
+        cmsel,s, top200n
+        *get,master_top200,node,0,num,min
+
+    alls
+
+    csys,0
+    nsel,none
+
+    ! Preparing for circuit definition
+        N,1000, -2*a,    0,    0
+        N,2000,  2*a,    0,    0
+        N,3000,    0,    0, -2*a
+        N,4000,    0,    0,  2*a
+        N,5000,    0, -2*a,    0
+        N,6000,    0,  2*a,    0
+
+        N,1001, -2*a,  3*a,    0
+        N,1002,  2*a,  3*a,    0
+        N,3001, -3*a,    0, -2*a
+        N,3002, -3*a,    0,  2*a
+        N,5001,    0, -2*a,  3*a
+        N,5002,    0,  2*a,  3*a
+
+        N,1003,    0,  4*a,    0
+        N,3003, -4*a,    0,    0
+        N,5003,    0,    0,  4*a
+
+        csys,2
+        nrotat,all
+        nsel,all
+
+    ! Inductors
+        type,103
+        real,103
+        e,1000,master_side202
+        e,3000,master_side203
+        e,5000,master_bot200
+
+    ! Resistors
+        type,102
+        real,102
+        e,1000,1001
+        e,3000,3001
+        e,5000,5001
+
+    ! Voltage sources
+        type,104
+        real,104
+        e,1001,master_side201,1003
+        e,3001,master_side204,3003
+        e,5001,master_top200,5003
+
+    ! Mass element
+        type,200
+        real,200
+        ! acel,,g
+        e,100
+
+    ! DOF Constraints
+        ! cmsel,s,sphere_nodes ! Sphere
+        nsel,s,,,100
+        d,all,ux,0
+        d,all,uy,0
+        d,all,uz,0
+
+        cmsel,s, side201n  ! Outer electrodes
+        cmsel,a, side202n
+        cmsel,a, side203n
+        cmsel,a, side204n
+        cmsel,a, bot200n
+        cmsel,a, top200n
+        d,all,ux,0
+        d,all,uy,0
+        d,all,uz,0
+        d,all,rotx,0
+        d,all,roty,0
+        d,all,rotz,0
+
+        cmsel,s, side101n  ! Outer electrodes
+        cmsel,a, side102n
+        cmsel,a, side103n
+        cmsel,a, side104n
+        cmsel,a, bot100n
+        cmsel,a, top100n
+        cp,200,volt,all
+
+        nsel,s,,,master_side201
+        ! nsel,a,,,master_side204
+        ! nsel,a,,,master_top200
+        d,all,volt,0
+
+    alls
+    finish
+
+    ! Solution
+        /solu
+        antype,trans
+        cnvtol,AMPS,1,1e-3
+        outres,all,all
+        timint,on
+        autots,off
+        deltim,dt
+        time,dt*32
+        kbc,1
+        solve
+
+        ddele,100,ux
+        ddele,100,uy
+        ddele,100,uz
+        antype,trans
+        cnvtol,AMPS,1,1e-3
+        outres,all,all
+        timint,on
+        autots,off
+        deltim,dt
+        time,time*2
+        kbc,1
+        solve
+
+    /post1
+        Ftop_X = 0
+        Ftop_Y = 0
+        Ftop_Z = 0
+        Fbot_X = 0
+        Fbot_Y = 0
+        Fbot_Z = 0
+        *do,k,1,16
+            cmsel,s, top200n
+            fsum
+            *GET,Ftop_X_t,FSUM,0,ITEM,FX
+            *GET,Ftop_Y_t,FSUM,0,ITEM,FY
+            *GET,Ftop_Z_t,FSUM,0,ITEM,FZ
+            cmsel,s, bot200n
+            fsum
+            *GET,Fbot_X_t,FSUM,0,ITEM,FX
+            *GET,Fbot_Y_t,FSUM,0,ITEM,FY
+            *GET,Fbot_Z_t,FSUM,0,ITEM,FZ
+            *if,abs(Ftop_Y_t),GT,abs(Ftop_Y),then
+                Ftop_X = Ftop_X_t
+                Ftop_Y = Ftop_Y_t
+                Ftop_Z = Ftop_Z_t
+            *endif    
+            *if,abs(Fbot_Y_t),GT,abs(Fbot_Y),then
+                Fbot_X = Fbot_X_t
+                Fbot_Y = Fbot_Y_t
+                Fbot_Z = Fbot_Z_t
+            *endif
+            set,PREVIOUS
+        *enddo
+        f_top_x(i) = Ftop_X
+        f_top_y(i) = Ftop_Y
+        f_top_z(i) = Ftop_Z
+        f_bot_x(i) = Fbot_X
+        f_bot_y(i) = Fbot_Y
+        f_bot_z(i) = Fbot_Z
+        gap_ar(i)  = i
+
+        finish
+
+    /post26
+        numvar,1000
+        rforce,101, master_side201, F,X,ForceX01
+        rforce,102, master_side202, F,X,ForceX02
+        rforce,103, master_side203, F,X,ForceX03
+        rforce,104, master_side204, F,X,ForceX04
+        rforce,105, master_bot200 , F,X,ForceXbot
+        rforce,106, master_top200 , F,X,ForceXtop
+        nsol,111,   master_side201, Volt,Volt01
+        nsol,112,   master_side202, Volt,Volt01
+        nsol,113,   master_side203, Volt,Volt01
+        nsol,114,   master_side204, Volt,Volt01
+        nsol,115,   master_bot200 , Volt,Volt01
+        nsol,116,   master_top200 , Volt,Volt01
+        store,merge
+        LINES,1e6,
+        /HEADER, OFF, OFF, OFF, OFF, OFF, OFF
+        /OUTPUT,bulk,txt
+        /OUTPUT
+        /OUTPUT,master_side201_VOLT,txt
+        PRVAR,111  
+        /OUTPUT
+        /OUTPUT,Volt01,txt
+        PRVAR,120
+        /OUTPUT
+        /OUTPUT,master_side201_FORCE,txt
+        PRVAR,101
+        /OUTPUT
+        finish
+
+!     PARSAV,ALL,PARAM_FILE,TXT
+!     /CLEAR,NOSTART
+!     PARRES,NEW,PARAM_FILE,TXT
+!     save
+
+! *enddo
+
+! *CFOPEN,forces_top_bot,TXT
+! *VWRITE,f_top_x(1),f_top_y(1),f_top_z(1),f_bot_x(1),f_bot_y(1),f_bot_z(1)
+! (F30.25,' ',F30.25,' ',F30.25,' ',F30.25,' ',F30.25,' ',F30.25)
+! *CFCLOS

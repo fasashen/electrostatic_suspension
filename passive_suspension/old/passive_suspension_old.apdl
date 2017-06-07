@@ -1,0 +1,144 @@
+finish
+/clear
+
+/BATCH,LIST
+/NOPR
+/title,passive suspension
+!!!
+!!!GEOMETRY PROPERTIES
+!!!
+g = 1          ! air gap
+w = 20         ! electrode width
+thk = 1        ! beam thickness
+!!!
+!!!MESH PROPERTIES
+!!!
+elnum = 2
+!!!
+!!!PROBLEM PROPERTIES
+!!!
+V_amp = 100     ! Voltage amplitude
+V_freq = 50     ! Voltage frequency
+resistivivty = 2
+inductivity = 4
+!!!
+
+/prep7
+!ELEMENT ID 1 ELECTRIC 
+et,1,223,1001,,,1        ! "elastic air" brick
+mp,ex,1,1.e-3            ! MPa
+mp,prxy,1,0.0            
+mp,perx,1,1
+emunit,EPZRO,8.854e-6    ! pF/um
+!ELEMENT ID 2 STRUCTURE
+et,2,183                 ! structural brick
+mp,ex,2,169e3            ! MPa
+mp,nuxy,2,0.066
+mp,dens,2,2.329e-15      ! kg/(um)^3
+!ELEMENT ID 1.. CIRCU
+ET,101,CIRCU124,0    ! RESISTOR 
+ET,102,CIRCU124,1    ! INDUCTOR
+ET,103,CIRCU124,4,1  ! VOLTAGE SOURCE, Sinusoidal load
+ET,999,200           ! wire
+!!!!
+R,101,resistivivty   ! RESISTOR 
+R,102,inductivity    ! INDUCTOR
+R,103,0,V_amp,V_freq
+!!!
+!!!Model
+!!!
+BLC4, 0,0,w,-1*thk
+BLC4, 0,0,w,g
+NUMMRG,kp
+LSEL,s,,,2
+LSEL,a,,,4
+LESIZE,all,,,elnum
+LSEL,s,,,1
+LSEL,a,,,3
+LSEL,a,,,7
+LESIZE,all,,,elnum*w/g
+lsel,all
+LSEL,s,,,8
+LSEL,a,,,6
+LESIZE,all,,,elnum
+!Meshing bricks
+type,1
+mat,1
+amap,2,3,4,8,7
+! type,2
+! mat,2
+! amap,1,1,2,3,4
+nsel,s,loc,x,0,w
+nsel,r,loc,y,0
+cp,1,VOLT,all    ! bottom coupling
+nsel,s,loc,x,0,w
+nsel,r,loc,y,g
+cp,2,VOLT,all    ! top coupling
+!
+!Circuit defining
+N1 = NODE(0,0,0)
+N2 = NODE(0,g,0)
+N,10001,-1,0,0
+N,10002,-1,1,0
+N,10003,-1,2,0
+type,103
+real,103
+E,N1,10002,10001
+type,101
+real,101
+E,10002,10003
+type,102
+real,102
+E,10003,N2
+!
+!!!
+!!! Apply DOF
+!!!
+!
+!
+nsel,all
+nsel,s,loc,y,0
+nsel,a,loc,x,g
+d,all,ux,0.0
+d,all,uy,0.0
+!
+alls
+/solu
+cnvtol,f,1,1e-3
+deltim,10              ! 10 Volt solution interval
+outres,nsol,1      
+neqit,50
+nlgeom,on              
+time,1000               ! Time = voltage
+kbc,0                  ! ramped loading
+solve
+fini
+
+! /solu
+! anty,static
+! outres,all,all
+! solve
+! finish
+
+
+ndisp=node(0,0,0)    ! node for displacement display
+/POST26
+nsol,2,ndisp,u,y
+/axlab,y,UY          
+/axlab,x,Voltage     
+prvar,2              
+plvar,2 
+fini
+
+/POST1
+nsel,s,loc,y,0
+FSUM  
+! /POST1  
+! !*  
+/EFACET,1   
+PLNSOL, VOLT,, 0 !el potential
+! /EFACET,1    !
+! ! PLNSOL, EF,SUM, 0 !el field
+! ! /EFACET,1   
+! ! PLNSOL, JC,SUM, 0  !current density
+fini

@@ -1,0 +1,126 @@
+finish
+/clear
+
+/TITLE, Passive Suspension
+/com,    MKSV units
+
+/input, ../config.py
+/input, ../gap.txt
+
+/PREP7
+! Coupled-field UX-VOLT elements
+! KEYOPT(4) Electrostatic force in electroelastic analysis (KEYOPT(1) = 1001):
+! 0 -- Applied to every element node.
+! 1 -- Applied to the air-structure interface or to element nodes that have constrained structural degrees of freedom.
+! 2 -- Not applied.
+
+! CIRCU94 Assumptions and Restrictions
+! Only MKS units are allowed (EMUNIT command).
+
+emunit,MKS
+
+et,1,SOLID226,1001,,,1   ! 20-node "elastic air" brick
+mp,ex,1,1.e-3            ! MPa
+mp,prxy,1,0.0            
+mp,perx,1,1
+
+et,2,SOLID186,,1         ! 20-node structural brick
+mp,ex,2,169e3            ! MPa
+mp,nuxy,2,0.066
+mp,dens,2,2.329e-15      ! kg/(um)^3
+
+
+
+
+! Creating curcuit elements
+N,101,-gap,0,0
+N,102,-gap,gap,0
+N,103,-0.5*gap,-gap,0
+N,200,0,0,0
+N,201,0,gap,0
+alls
+
+! Electrical BC
+nsel,s,,,200
+*GET,Nbot,NODE,0,NUM,MIN
+nsel,s,,,201
+*GET,Ntop,NODE,0,NUM,MIN
+nsel,all
+
+!If KEYOPT(6) is set to 1, the analysis type is electrostatic-circuit and the reaction solution is positive electric charge.
+!Electric charge reactions must all be positive or negative.
+!If a piezoelectric matrix is not specified, the analysis type is electroelastic and the reaction solution is positive electric charge.
+C = eps_0*S/gap
+ET,6,CIRCU94,2,,,,,1   ! DEFINE A RESISTOR
+R,6,C
+TYPE,6
+REAL,6
+E,Nbot,Ntop
+
+ET,5,CIRCU94,0,,,,,1   ! DEFINE A RESISTOR
+R,5,res                       
+TYPE,5
+REAL,5
+E,101,102
+
+ET,3,CIRCU94,1,,,,,1   ! DEFINE AN INDUCTOR
+L=15                   ! INDUCTANCE, H
+R,2,ind
+TYPE,3
+REAL,2
+E,102,Ntop
+
+ET,4,CIRCU94,4,1,,,,1  ! DEFINE A VOLTAGE SOURCE
+R,3,0,V_amp,V_freq
+TYPE,4
+REAL,3
+E,101,Nbot,103
+nsel,all
+FINI
+
+! Transient analysis
+/solu
+BCSOPTION,,incore
+ANTYPE,TRANS                  
+OUTRES,ALL,ALL
+! cnvtol,f,1,1e-3
+! cnvtol,CHRG,1,tolerance
+AUTOTS,off
+deltim,dt              ! 10 Volt solution interval  
+! neqit,50
+! nlgeom,on              
+time,time             
+kbc,1                  ! stepped loading
+solve
+fini
+
+/POST1
+! /EFACET,1   
+! PLNSOL, VOLT,, 0 !el potential
+/HEADER, OFF, OFF, OFF, OFF, OFF, OFF
+/OUTPUT,force_y.txt
+*status,force_y
+/OUTPUT
+finish
+/POST26
+NUMVAR, 200
+FILLDATA,194,,,,-1,0
+NSOL,200,Ntop,VOLT, 
+NSOL,199,Nbot,VOLT, 
+PROD,197,199,194
+PROD,198,199,194
+ADD,4,199,198,,V_VOLT
+ADD,3,200,197,,C_VOLT 
+STORE,MERGE 
+XVAR,1  
+PLVAR,3,
+
+! parsav,,params.txt
+finish
+! /OUTPUT
+! fini 
+! /POST26
+! RFORCE,2,1000,F,Y, FY_2 
+! STORE,MERGE 
+! XVAR,1  
+! PLVAR,2,

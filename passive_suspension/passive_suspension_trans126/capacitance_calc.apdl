@@ -1,0 +1,110 @@
+!-----------------------------------------------------------------------------------------------------------------------
+!-------------------------------- CALCULATION OF ELECTRIC FIELD AND CAPACITANCE ----------------------------------------
+!------------------------------------ OF A SIMPLE PARALLEL-PLATE CAPACITOR ---------------------------------------------
+!-----------------------------------------------------------------------------------------------------------------------
+
+FINISH
+/CLEAR,NOSTART
+
+/input, ../config.py
+/input, ../cap_calc_params.txt
+ANALYSIS_TYPE = 'CAPACITANCE_CALC'
+
+*DIM,GAP_AR,ARRAY,NUM_CALCS
+*DIM,CAPAC_AR,ARRAY,NUM_CALCS
+
+*DO,I,1,NUM_CALCS
+    /FILNAME,capacitance_calc
+    /TITLE,capacitance_calc
+
+    /PREP7
+    BTOL, 2.000000e-6
+    ! ANALYSIS OPTIONS
+
+    *SET,ANALYSIS_TYPE,ANALYSIS_TYPE    ! 'CAPACITANCE_CALC' or 'ELECTROSTATIC_PROBLEM'
+    EMUNIT,MKS   
+
+    d = d_min + (I-1)*d_inc  
+
+    ! ELEMENT TYPES DEFINITION
+
+    ET,1,121
+    KEYOPT,1,3,0    ! plane element behavior
+    KEYOPT,1,4,0    ! Element coordinate system is parallel to the global coordinate system
+    KEYOPT,1,5,0    ! Basic element printout
+    KEYOPT,1,6,0    ! positive electric charge reaction sign
+
+    ET,2,110
+    KEYOPT,2,1,1    ! electrostatic degrees of freedom
+    KEYOPT,2,2,1    ! 8-node quadrilateral
+    KEYOPT,2,3,0    ! plane element behavior
+    KEYOPT,2,4,0    ! positive electric charge reaction sign
+
+    ! MATERIALS DEFINITION
+
+    MP,PERX,1,EPS_R
+
+    ! CREATE MESH
+    k,101,-a/2,-d/2
+    k,102,-a/2,d/2
+    k,103,a/2,d/2
+    k,104,a/2,-d/2
+
+    l,101,102
+    l,102,103
+    l,103,104
+    l,104,101
+
+    LSEL,s,,,2
+    LSEL,a,,,4
+    LESIZE,ALL,,,numEperLength
+
+    LSEL,s,,,1
+    LSEL,a,,,3
+    LESIZE,ALL,,,numEperGap
+    
+    ALLS
+    al,all
+    TYPE,1
+    amesh,all
+
+    LSEL,s,,,2
+    NSLL
+    CM,COND1,NODE
+
+    LSEL,s,,,4
+    NSLL
+    CM,COND2,NODE
+    FINISH
+
+    ALLS
+
+    /SOLU
+    CMATRIX,1,'COND',2,0
+    FINISH
+
+    /POST1
+    CAPACITANCE_NUM = CMATRIX(1,1,1)
+    GAP_AR(I) = d
+    CAPAC_AR(I) = CAPACITANCE_NUM
+    FINISH
+    PARSAV,ALL,PARAM_FILE,TXT
+    /CLEAR,NOSTART
+    PARRES,NEW,PARAM_FILE,TXT
+*ENDDO
+
+/POST1
+*CFOPEN,CAPACITANCE_VS_GAP,TXT
+*VWRITE,GAP_AR(1),CAPAC_AR(1)
+(F30.25,' ',F30.25)
+*CFCLOS
+
+*CFOPEN,CAPACITANCE,TXT
+*VWRITE,CAPAC_AR(1)
+(F30.25)
+*CFCLOS
+
+*CFOPEN,GAP,TXT
+*VWRITE,GAP_AR(1)
+(F30.25)
+*CFCLOS

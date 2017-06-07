@@ -1,0 +1,166 @@
+FINISH
+/CLEAR,NOSTART
+
+/input, ../config.py
+/input, ../cap_calc_params.txt
+
+*DIM,GAP_AR,ARRAY,NUM_CALCS
+*DIM,FORCE_AR,ARRAY,NUM_CALCS
+
+/FILNAME,force_calc
+/TITLE,force_calc
+
+*DO,I,1,NUM_CALCS
+    /PREP7
+    BTOL, 1.000000e-007
+
+    d = d_min + (I-1)*d_inc
+
+    ! Materials and Elements definition
+    et,200,mass21
+    r,200,mass
+
+    et,110,TRANS126,,1,1
+    keyopt,110,2,1    ! degree-of-freedom set: UX-VOLT
+    keyopt,110,3,1    ! Use capacitance versus C0, C1
+    keyopt,110,6,0    ! Full stiffness method
+    R,110,,,d,min_gap,stiff
+    RMORE,GAP1,CAP1,GAP2,CAP2,GAP3,CAP3
+    RMORE,GAP4,CAP4,GAP5,CAP5,GAP6,CAP6
+    RMORE,GAP7,CAP7,GAP8,CAP8,GAP9,CAP9
+    RMORE,GAP10,CAP10,GAP11,CAP11,GAP12,CAP12
+    RMORE,GAP13,CAP13,GAP14,CAP14,GAP15,CAP15
+    RMORE,GAP16,CAP16,GAP17,CAP17,GAP18,CAP18
+    ! RMORE,GAP19,CAP19,GAP20,CAP20
+
+    ! Creating curcuit elements
+    et,102,CIRCU124,0,,,,,   ! DEFINE A RESISTOR
+    r,102,res                       
+
+    et,103,CIRCU124,1,,,,,   ! DEFINE AN INDUCTOR
+    r,103,ind
+
+    et,104,CIRCU124,4,1,,,,  ! DEFINE A VOLTAGE SOURCE
+    r,104,0,V_amp,V_freq
+
+
+! Geometry
+    nsel,all
+    cm,sphere_nodes,node
+    n,100,0,0,0 ! master node
+
+    n,110, a, 0, 0 
+    n,111,-a, 0, 0
+
+! Generating trans126 elements
+    n,210, a+d,   0,   0
+    n,211,-a-d,   0,   0
+    csys,2
+    nsel,all
+    nrotat,all ! Rotating node's local system
+
+! Creating tran126 elements    
+    type,110
+    real,110
+    e,110,210
+    e,111,211
+
+! Cerig definition
+    nsel,s,,,110,111
+    nsel,a,,,100
+    cerig,100,all,ux
+
+! Couplings all rotor electrodes VOLT dof
+    nsel,s,,,110,131
+    cp,101,volt,all
+    nsel,all
+    alls
+    csys,0
+
+! Preparing for circuit definition
+    N,310,  a+d,    0,  2*a
+    N,311, -a-d,    0,  2*a
+
+! Circuit definition
+    ! Inductors
+        type,103
+        real,103
+        e,210,310
+    ! Resistors
+        type,102
+        real,102
+        e,310,311
+    ! Voltage sources
+        type,104
+        real,104
+        e,311,211,100
+
+    type,200
+    real,200
+    e,100
+
+! DOF Constraints
+    nsel,s,,,100 ! Hold rotor at first step
+    d,all,ux,0
+    d,all,uy,0
+    d,all,uz,0
+    d,all,rotx,0
+    d,all,roty,0
+    d,all,rotz,0
+
+    nsel,s,,,210,231  ! Outer electrodes nodes
+    d,all,ux,0
+
+    nsel,s,,,211
+    d,all,volt,0
+    nsel,all
+
+    alls
+    finish
+
+    /SOLU
+
+    ANTYPE,TRANS
+    AUTOTS,off
+    deltim,dt               
+    time,time            
+    kbc,1
+    solve
+    OUTRES,ALL,ALL
+    deltim,dt/4               
+    time,time+1/V_freq*1
+    solve
+    FINISH
+
+    /POST26
+    NUMVAR, 200
+    RFORCE,2,101,F,Y,Force
+    STORE,MERGE 
+    XVAR,1  
+    PLVAR,2,
+    *get,max_forc,vari,2,extrem,vmax
+    FINI
+    /post1
+    ! nsel,,,,101
+    ! FSUM
+    ! *GET,Force_Y,FSUM,0,ITEM,FY
+    ! nsel,all
+    /HEADER, OFF, OFF, OFF, OFF, OFF, OFF
+    /OUTPUT,status.txt
+    *status,i
+    /OUTPUT
+    FORCE_AR(I) = max_forc
+    GAP_AR(I) = d
+    FINISH
+    PARSAV,ALL,PARAM_FILE,TXT
+    /CLEAR,NOSTART
+    PARRES,NEW,PARAM_FILE,TXT
+
+*ENDDO
+
+/POST1
+*CFOPEN,force_y,TXT
+*VWRITE,GAP_AR(1),FORCE_AR(1)
+(F30.25,' ',F30.25)
+*CFCLOS
+

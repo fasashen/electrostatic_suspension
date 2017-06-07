@@ -1,0 +1,257 @@
+FINISH
+/CLEAR,NOSTART
+
+! /input, ../config.py
+! /input, ../params_pas_susp.txt
+! /input, ../cap_vs_gap_data.txt
+
+eps0 = 8.854e-12
+S = 0.
+a = 0.016
+b = 0.013
+h = a-b
+d = 7.5e-6
+d = 0.005
+
+min_gap = 0
+stiff = 0.1
+
+C0 = 1
+elnum = 10
+
+V_amp = 10
+V_freq = 40000
+res = 300
+ind = 20e-4
+dt = 1/V_freq/32
+time = 1/V_freq*2
+mass = 1e-6
+g = 9.8
+
+sphere_eltype = 281
+
+/PREP7
+
+btol, 1.0e-6
+
+mp,ex,100,2e6
+et,100,sphere_eltype,
+r,100,d
+tshap,qua8
+
+et,101,TRANS126
+keyopt,101,2,2    ! degree-of-freedom set: UY-VOLT
+keyopt,101,3,0    ! Use capacitance versus C0, C1
+keyopt,101,6,0    ! Full stiffness method
+r,101,0,0,d,,,,C0
+
+! Creating curcuit elements
+et,102,CIRCU124,0,,,,,   ! DEFINE A RESISTOR
+r,102,res                       
+
+et,103,CIRCU124,1,,,,,   ! DEFINE AN INDUCTOR
+r,103,ind
+
+et,104,CIRCU124,4,1,,,,  ! DEFINE A VOLTAGE SOURCE
+r,104,0,V_amp,V_freq
+
+et,200,mass21
+r,200,mass
+
+! Geometry
+sphere, 0, a,
+cm,sphere,area
+asel,all
+asel,inve
+
+block, -b,b, -b,b, -b,b
+cm,block,area
+asel,all
+
+asba,sphere,block,,,dele
+vdele,2,,,1
+
+! Components assignation 1 (areas sets)
+asel,s,,,19
+asel,a,,,20
+cm,body,area
+asel,inve
+
+asel,s,,,17,18
+cm,side101,area
+asel,s,,,15,16
+cm,side102,area
+asel,s,,,13,14
+cm,side103,area
+asel,s,,,11,12
+cm,side104,area
+asel,s,,,10
+cm,bot100,area
+asel,s,,,9
+cm,top100,area
+asel,all
+
+! Meshing
+lsel,s,loc,y,0
+lesize,all,,,elnum/2
+lsel,inve
+lesize,all,,,elnum
+asel,all
+
+numstr,node,10000
+mat,100
+type,100
+amesh,all
+
+! Couplings all ball's dofs
+nsel,all
+cp,100,all,all
+d,all,all,0
+
+! Components assignation 2 (nodes sets)
+cmsel,s, side101,
+nsla
+cm,side101n,node
+
+cmsel,s, side103,
+nsla
+cm,side102n,node
+
+cmsel,s, side102,
+nsla
+cm,side103n,node
+
+cmsel,s, side104,
+nsla
+cm,side104n,node
+
+cmsel,s, top100,
+nsla
+cm,top100n,node
+
+cmsel,s, bot100,
+nsla
+cm,bot100n,node
+
+asel,all
+
+! Generating trans126 elements
+csys,2
+nsel,all
+nrotat,all
+emtgen,'side101n','side201e','side201n','UX',  d, min_gap, stiff, eps0
+emtgen,'side102n','side202e','side202n','UX',  d, min_gap, stiff, eps0
+emtgen,'side103n','side203e','side203n','UX',  d, min_gap, stiff, eps0
+emtgen,'side104n','side204e','side204n','UX',  d, min_gap, stiff, eps0
+
+emtgen, 'top100n', 'top200e', 'top200n','UX',  d, min_gap, stiff, eps0
+emtgen, 'bot100n', 'bot200e', 'bot200n','UX',  d, min_gap, stiff, eps0
+ 
+nsel,all
+
+
+! Displacement constraints of electordes
+cmsel,s, side201n
+cmsel,a, side202n
+cmsel,a, side203n
+cmsel,a, side204n
+cmsel,a,  top200n
+cmsel,a,  bot200n
+d,all,ux,0
+d,all,uy,0
+d,all,uz,0
+
+! Creates voltage couplings on electrodes and defining master nodes
+cmsel,s, side201n
+cp,201,volt,all
+*get,master_side01,node,0,num,min
+
+cmsel,s, side202n
+cp,202,volt,all
+*get,master_side02,node,0,num,min
+
+cmsel,s, side203n
+cp,203,volt,all
+*get,master_side03,node,0,num,min
+
+cmsel,s, side204n
+cp,204,volt,all
+*get,master_side04,node,0,num,min
+
+cmsel,s, bot200n
+cp,300,volt,all
+*get,master_bot,node,0,num,min
+
+cmsel,s, top200n
+cp,400,volt,all
+*get,master_top,node,0,num,min
+
+alls
+csys,0
+
+N,1000, -2*a,    0,    0
+N,2000,  2*a,    0,    0
+N,3000,    0,    0, -2*a
+N,4000,    0,    0,  2*a
+N,5000,    0, -2*a,    0
+N,6000,    0,  2*a,    0
+
+N,1001, -2*a,  3*a,    0
+N,1002,  2*a,  3*a,    0
+N,3001, -3*a,    0, -2*a
+N,3002, -3*a,    0,  2*a
+N,5001,    0, -2*a,  3*a
+N,5002,    0,  2*a,  3*a
+
+! Inductors
+type,103
+real,103
+
+e,1000,master_side01
+e,2000,master_side02
+e,3000,master_side03
+e,4000,master_side04
+e,5000,master_bot
+e,6000,master_top
+
+! Resistors
+type,102
+real,102
+e,1000,1001
+e,2000,1002
+
+e,3000,3001
+e,4000,3002
+
+e,5000,5001
+e,6000,5002
+
+! Voltage sources
+type,104
+real,104
+
+e,1001,1002,1000
+e,3001,3002,3000
+e,5001,5002,5000
+
+! Mass element
+type,200
+real,200
+acel,,g
+
+nsel,s,,,1001
+nsel,a,,,3001
+nsel,a,,,5001
+d,all,all,0
+
+finish
+
+! /solu
+! antype,trans
+! autots,off
+! deltim,dt
+! time,time
+! kbc,1
+! outres,all,all
+! solve
+

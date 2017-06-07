@@ -1,0 +1,224 @@
+FINISH
+/CLEAR,NOSTART
+
+/input, ../config.py
+/input, ../params_pas_susp.txt
+/input, ../cap_vs_gap_data.txt
+
+
+*DIM,GAP_AR,ARRAY,NUM_CALCS
+*DIM,FORCE_AR,ARRAY,NUM_CALCS
+
+*IF,ANALYSIS_TYPE,EQ,'force_calc',THEN
+    /FILNAME,force_calc_SOLID
+    /TITLE,force_calc_SOLID
+*ENDIF
+*IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
+    /FILNAME,pas_susp_dynamics_SOLID
+    /TITLE,pas_susp_dynamics_SOLID
+*ENDIF
+time = 1/V_freq*64
+ANALYSIS_TYPE='force_calc'
+
+*DO,I,1,NUM_CALCS
+    /PREP7
+    BTOL, 1.000000e-006
+
+    *IF,ANALYSIS_TYPE,EQ,'force_calc',THEN
+        d = d_min + (I-1)*d_inc
+    *ENDIF
+    *IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
+        d = init_gap
+    *ENDIF
+    d = 3e-6
+    emunit,mks
+
+    et,101,SOLID226,1001,,,1   ! 20-node "elastic air" brick
+    mp,ex,101,1e-3             ! MPa
+    mp,prxy,101,0.0            
+    mp,perx,101,1
+
+    et,102,SOLID186,,1         ! 20-node structural brick
+    mp,ex,102,169e3            ! MPa
+    mp,nuxy,102,0.066
+    mp,dens,102,2.329e-15      ! kg/(um)^3
+
+    ! Geometry and meshing
+    block,0,a,0,d,,w
+    block,0,a,-d,0,,w
+    vglue,all
+    numstr,node,1000 
+    esize,elsize
+
+    lsel,s,,,1
+    lsel,a,,,3
+    lsel,a,,,6
+    lsel,a,,,8
+    lesize,all,,,1
+
+    type,101
+    mat,101
+    vmesh,1
+
+    type,102
+    mat,102
+    vmesh,3
+
+    ! Electrical BC
+    nsel,all
+
+    nsel,s,loc,y,0
+    cp,1,volt,all
+    cp,2,uy,all
+    nsel,r,loc,x,0
+    *GET,Nbot,NODE,0,NUM,MIN
+
+    nsel,s,loc,y,d
+    cp,3,volt,all
+    cp,4,uy,all
+    nsel,r,loc,x,0
+    *GET,Ntop,NODE,0,NUM,MIN
+
+    ! Structural BC
+    nsel,all
+    d,all,ux,0
+    d,all,uz,0
+    D,Ntop,UY,0
+    D,Nbot,UY,0
+    D,Nbot,volt,0
+
+
+    N,101,-b,0,0
+    N,103,-b/2,-b/2,0
+    N,102,-d_max,d,0
+    alls
+
+    ! Creating curcuit elements
+    ET,2,CIRCU94,0,,,,,1   ! DEFINE A RESISTOR
+    R,2,res                       
+    TYPE,2
+    REAL,2
+    E,101,102
+
+    ET,3,CIRCU94,1,,,,,1   ! DEFINE AN INDUCTOR
+    R,3,ind
+    TYPE,3
+    REAL,3
+    E,102,Ntop
+
+    ET,4,CIRCU94,4,1,,,,1  ! DEFINE A VOLTAGE SOURCE
+    R,4,0,V_amp,V_freq
+    TYPE,4
+    REAL,4
+    E,Nbot,101,103
+    nsel,all
+    alls
+
+    ! Constraints
+
+    *IF,ANALYSIS_TYPE,EQ,'force_calc',THEN
+        
+
+        FINI
+        /SOLU
+        cnvtol,f,1,1e-3
+        !Loasdstep1
+        OUTRES,ALL,ALL
+        ANTYPE,TRANS
+        AUTOTS,off
+        deltim,dt               
+        time,time            
+        kbc,1
+        solve
+
+        FINISH
+
+        /post1
+            f_y = 0
+
+            *do,k,1,32
+                nsel,,,,Nbot
+                fsum
+                *get,f_y_t,FSUM,0,ITEM,FY
+                *if,abs(f_y_t),GT,abs(f_y),then
+                    f_y = f_y_t
+                *endif    
+                set,PREVIOUS
+            *enddo
+            FORCE_AR(i) = f_y
+            GAP_AR(i)   = d
+        FINISH
+        PARSAV,ALL,PARAM_FILE,TXT
+        /CLEAR,NOSTART
+        PARRES,NEW,PARAM_FILE,TXT
+    *ENDIF
+    *IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
+
+        et,100,mass21,0,0,4 !2-D mass without rotary inertia
+        R,100,mass
+        type,100
+        real,100
+        e,Nbot
+        acel,,g
+
+
+        FINI
+
+        /SOLU
+        OUTRES,ALL,all
+        ANTYPE,TRANS
+        AUTOTS,off
+        deltim,dt               
+        time,time            
+        kbc,1
+        solve
+        
+        ddele,Nbot,uy
+        OUTRES,ALL,all
+        ANTYPE,TRANS
+        AUTOTS,off
+        deltim,dyndt               
+        time,time + dyntime           
+        kbc,1
+        solve
+
+        FINISH
+
+        /POST26
+            /OUTPUT
+            NSOL,2,Nbot,U,Y, UY_2,   
+            STORE,MERGE 
+            XVAR,1  
+            PLVAR,2,
+            RFORCE,3,Nbot,F,Y,Force
+            STORE,MERGE
+            NSOL,4,Nbot,Volt
+            STORE,MERGE
+            LINES,1e6,
+            /HEADER, OFF, OFF, OFF, OFF, OFF, OFF
+            /OUTPUT,bulk,txt
+            /OUTPUT
+            /OUTPUT,dyn_UY_vs_Time,txt
+            PRVAR,2  
+            /OUTPUT
+            /OUTPUT,dyn_Force_vs_Time.txt
+            PRVAR,3
+            /OUTPUT
+            /OUTPUT,dyn_Volt_vs_Time.txt
+            PRVAR,4
+            /OUTPUT
+        FINI
+
+    *ENDIF
+
+*ENDDO
+
+*IF,ANALYSIS_TYPE,EQ,'force_calc',THEN
+    /POST1
+    *CFOPEN,force_y,TXT
+    *VWRITE,GAP_AR(1),FORCE_AR(1)
+    (F30.25,' ',F30.25)
+    *CFCLOS
+*ENDIF
+*IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
+*ENDIF
