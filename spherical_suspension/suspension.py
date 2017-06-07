@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
     # start_simulation('sphere_gyroscope_SEE3.bat')
 
-    start_simulation('sphere_gyroscope_X.bat')
+    start_simulation('suspension_1D.bat')
 
     t_volt, volt_rot = read_from_file('./output/Volt_100.txt')
     t_volt1, volt_elec = read_from_file('./output/Volt_110.txt')
