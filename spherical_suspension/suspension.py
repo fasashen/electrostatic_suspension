@@ -4,7 +4,7 @@ from scipy.integrate import odeint
 from config import *
 import os
   
-def read_from_file(fname,header=True):
+def read_from_file(fname,header=True,get_time_vector=False):
     '''
     Reads the results of capacitance calculation
     '''
@@ -15,7 +15,10 @@ def read_from_file(fname,header=True):
         for line in f:
             time_list.append(float(line.split()[0]))
             data_list.append(float(line.split()[1]))
-    return time_list, data_list
+    if get_time_vector == True:
+        return time_list
+    else:
+        return data_list
 
 def ode_dynamic():
 
@@ -116,62 +119,81 @@ def force_theory(ux_list, volt_list, volt_elec):
 
 if __name__ == "__main__":
 
+    # Capacity versus gap calculation
     # calc_cap_vs_gap()
     # plot_cap()
 
-    # start_simulation('sphere_gyroscope_SEE3.bat')
+    # Launch ANSYS simulation
+    start_simulation('suspension_3D.bat')
 
-    start_simulation('suspension_1D.bat')
+    # Defining vectros to read data to
+    u = [] 
+    volt = []
+    volt_rotor = []
+    force = []
+    volt_in = [] #Input voltage
 
-    t_volt, volt_rot = read_from_file('./output/Volt_100.txt')
-    t_volt1, volt_elec = read_from_file('./output/Volt_110.txt')
-    # t_volt1, volt_elec = read_from_file('./output/Volt_210.txt')
+    sides = ["xp","xn", "yp","yn", "zp","zn"]
 
-    t_ux, ux = read_from_file('./output/master_UX.txt')
-    t_uy, uy = read_from_file('./output/master_UY.txt')
-    t_uz, uz = read_from_file('./output/master_UZ.txt')
-    t_fx, fx_pos = read_from_file('./output/Fx_pos.txt')
-    t_fx, fx_neg = read_from_file('./output/Fx_neg.txt')
+    # Reading data from files
+    time = read_from_file('./output/volt_rot.txt', True, True)
 
-    # t_volt, volt_rot = read_from_file('./output/Volt_110.txt')
-    # t_volt1, volt_elec = read_from_file('./output/Volt_210.txt')
+    u.append(read_from_file('./output/u_x.txt'))
+    u.append(read_from_file('./output/u_y.txt'))
+    u.append(read_from_file('./output/u_z.txt'))
 
-    # fx_neg = [-1*x for x in fx_neg]
-    fx_sum, volt_sum = [], []
-    for i,k in zip(fx_pos, fx_neg):
-        fx_sum.append(i+k)
-    for i,k in zip(volt_rot, volt_elec):
-        volt_sum.append(i-k)
+    volt_in.append(read_from_file('./output/volt_xin.txt'))
+    volt_in.append(read_from_file('./output/volt_yin.txt'))
+    volt_in.append(read_from_file('./output/volt_zin.txt'))
 
+    volt_rotor = read_from_file('./output/volt_rot.txt')
+
+    for side in sides:
+        volt.append(read_from_file('./output/volt_'+side+'.txt'))
+        force.append(read_from_file('./output/force_'+side+'.txt'))
+
+    force_xsum, volt_xsum, volt_ysum, volt_zsum = [], [], [], []
+    for i,k in zip(force[0], force[1]):
+        force_xsum.append(i+k)
+    for vr,vx,vy,vz in zip(volt_rotor, volt[0], volt[2], volt[4]):
+        volt_xsum.append(vr-vx)
+        volt_ysum.append(vr-vy)
+        volt_zsum.append(vr-vz)
+
+    # Plotting
     fig = plt.figure()
     fig.set_size_inches(12, 16)
 
     p1 = fig.add_subplot(411)
-    p1.plot(t_ux,ux,label='$ux$',linewidth=1, color='r')
+    p1.plot(time,u[0],label='$ux$',linewidth=1, color='r')
+    p1.plot(time,u[1],label='$uy$',linewidth=1, color='b')
+    p1.plot(time,u[2],label='$uz$',linewidth=1, color='g')
     p1.set_xlabel("$time, s$", fontsize=15)
-    p1.set_ylabel("$ux, m$", fontsize=15)
-    p1.legend(loc='upper right',fontsize=15,numpoints=1)
+    p1.set_ylabel("$u, m$", fontsize=15)
+    p1.legend(loc='best',fontsize=15,numpoints=1)
     p1.grid()
 
     p2 = fig.add_subplot(412)
-    p2.plot(t_volt,volt_rot,label='$volt-rotor$',linewidth=0.5, color='r')
-    p2.plot(t_volt,volt_elec,label='$volt-electrode$',linewidth=0.5, color='b')
-    p2.plot(t_volt,volt_sum,label='$volt-sum$',linewidth=1, color='k')
+    p2.plot(time,volt_rotor,label='$volt-rotor$', linewidth=1, color='r')
+    p2.plot(time,volt[0],label='$volt-electrode$',linewidth=1, color='b')
+    p2.plot(time,volt_in[0],label='$volt-in-x$',linewidth=0.5, color='g')
+    p2.plot(time,volt_in[1],label='$volt-in-y$',linewidth=0.5, color='k')
+    p2.plot(time,volt_in[2],label='$volt-in-z$',linewidth=0.5, color='y')
     p2.set_xlabel("$time, s$", fontsize=15)
     p2.set_ylabel("$volt, v$", fontsize=15)
     p2.legend(loc='upper right',fontsize=15,numpoints=1)
     p2.grid()
 
     p3 = fig.add_subplot(413)
-    p3.plot(t_fx,fx_pos,label='$pos$',linewidth=1, color='r')
-    p3.plot(t_fx,fx_neg,label='$neg$',linewidth=1, color='b')
+    p3.plot(time,force[0],label='$xpos$',linewidth=1, color='r')
+    p3.plot(time,force[1],label='$xneg$',linewidth=1, color='b')
     p3.set_xlabel("$time, s$", fontsize=15)
     p3.set_ylabel("$force, N$", fontsize=15)
     p3.legend(loc='upper right',fontsize=15,numpoints=1)
     p3.grid()
 
     p4 = fig.add_subplot(414)
-    p4.plot(t_fx,fx_sum,label='$sum$',linewidth=2, color='k')
+    p4.plot(time,force_xsum,label='$sum$',linewidth=2, color='k')
     p4.set_xlabel("$time, s$", fontsize=15)
     p4.set_ylabel("$force, N$", fontsize=15)
     p4.legend(loc='upper right',fontsize=15,numpoints=1)
@@ -179,24 +201,24 @@ if __name__ == "__main__":
 
     fig.savefig('plot',dpi=300)
 
-    fig2 = plt.figure()
-    fig2.set_size_inches(12, 14)
-    p1 = fig2.add_subplot(311)
-    p1.plot(t_ux,ux,label='$ux$',linewidth=1, color='r')
-    p1.set_xlabel("$time, s$", fontsize=15)
-    p1.set_ylabel("$uy, m$", fontsize=15)
-    p1.legend(loc='upper right',fontsize=15,numpoints=1)
-    p1.grid()
-    p2 = fig2.add_subplot(312)
-    p2.plot(t_ux,uy,label='$uy$',linewidth=1, color='b')
-    p2.set_xlabel("$time, s$", fontsize=15)
-    p2.set_ylabel("$uy, m$", fontsize=15)
-    p2.legend(loc='upper right',fontsize=15,numpoints=1)
-    p2.grid()
-    p3 = fig2.add_subplot(313)
-    p3.plot(t_ux,uz,label='$uz$',linewidth=1, color='g')
-    p3.set_xlabel("$time, s$", fontsize=15)
-    p3.set_ylabel("$uz, m$", fontsize=15)
-    p3.legend(loc='upper right',fontsize=15,numpoints=1)
-    p3.grid()
-    fig2.savefig('plot_u',dpi=300)
+    # fig2 = plt.figure()
+    # fig2.set_size_inches(12, 14)
+    # p1 = fig2.add_subplot(311)
+    # p1.plot(t_ux,ux,label='$ux$',linewidth=1, color='r')
+    # p1.set_xlabel("$time, s$", fontsize=15)
+    # p1.set_ylabel("$uy, m$", fontsize=15)
+    # p1.legend(loc='upper right',fontsize=15,numpoints=1)
+    # p1.grid()
+    # p2 = fig2.add_subplot(312)
+    # p2.plot(t_ux,uy,label='$uy$',linewidth=1, color='b')
+    # p2.set_xlabel("$time, s$", fontsize=15)
+    # p2.set_ylabel("$uy, m$", fontsize=15)
+    # p2.legend(loc='upper right',fontsize=15,numpoints=1)
+    # p2.grid()
+    # p3 = fig2.add_subplot(313)
+    # p3.plot(t_ux,uz,label='$uz$',linewidth=1, color='g')
+    # p3.set_xlabel("$time, s$", fontsize=15)
+    # p3.set_ylabel("$uz, m$", fontsize=15)
+    # p3.legend(loc='upper right',fontsize=15,numpoints=1)
+    # p3.grid()
+    # fig2.savefig('plot_u',dpi=300)
