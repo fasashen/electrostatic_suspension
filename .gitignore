@@ -17,3 +17,5 @@ spherical_suspension/output/output.txt
 spherical_suspension/__pycache__/config.cpython-35.pyc
 spherical_suspension/output/bulk.txt
 *.txt
+*.LN22
+spherical_suspension/output/file.bat

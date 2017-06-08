@@ -171,9 +171,9 @@ btol, 1.0e-7
     d,all,roty,0
     d,all,rotz,0
 
-    ! nsel,s,,,102
-    ! d,all,volt,0
-    ! nsel,all
+    nsel,s,,,102
+    d,all,volt,0
+    nsel,all
 
 alls
 finish
@@ -205,7 +205,7 @@ finish
         ! cnvtol,AMPS,1,1e-3
         ! cnvtol,u,1,1e-3
         ! cnvtol,F,1,1e-7
-        outres,all,all
+        outres,all,4
         timint,on
         autots,off
         deltim,dt

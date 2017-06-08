@@ -4,7 +4,7 @@ from scipy.integrate import odeint
 from config import *
 import os
   
-def read_from_file(fname,header=True,get_time_vector=False):
+def read_from_file(fname, header = True, get_time_vector = False):
     '''
     Reads the results of capacitance calculation
     '''
@@ -125,26 +125,22 @@ def main():
     '''Launch ANSYS simulation'''
     start_simulation('suspension_3D.bat')
 
-    '''Defining vectros to read data to'''
+    '''Defining vectros to write data to'''
     u = [] 
     volt = []
+    volt_in = []
     volt_rotor = []
     force = []
-    volt_in = [] #Input voltage
-
     sides = ["xp","xn", "yp","yn", "zp","zn"]
 
     '''Reading data from files'''
     time, bulk = read_from_file('./output/volt_rot.txt', True, True)
-
     u.append(read_from_file('./output/u_x.txt'))
     u.append(read_from_file('./output/u_y.txt'))
     u.append(read_from_file('./output/u_z.txt'))
-
     volt_in.append(read_from_file('./output/volt_xin.txt'))
     volt_in.append(read_from_file('./output/volt_yin.txt'))
     volt_in.append(read_from_file('./output/volt_zin.txt'))
-
     volt_rotor = read_from_file('./output/volt_rot.txt')
 
     for side in sides:
@@ -179,7 +175,7 @@ def main():
     p2.plot(time,volt_in[0],label='$volt-in-X$',linewidth=0.5, color='r')
     p2.plot(time,volt_in[1],label='$volt-in-Y$',linewidth=0.5, color='g')
     p2.plot(time,volt_in[2],label='$volt-in-Z$',linewidth=0.5, color='b')
-    p2.plot(time,volt_rotor,label='$volt-rotor$', linewidth=1, color='y')
+    p2.plot(time,volt_rotor,label='$volt-rotor$', linewidth=1, color='y', linestyle='--')
     p2.plot(time,volt[0],label='$volt-electrode$',linewidth=1, color='c')
     p2.set_xlabel("$time, s$", fontsize=15)
     p2.set_ylabel("$volt, V$", fontsize=15)
