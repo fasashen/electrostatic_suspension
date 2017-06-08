@@ -73,7 +73,7 @@ btol, 1.0e-7
     et,113,CIRCU124,4,1,,,,  ! DEFINE A VOLTAGE SOURCE
     r,113,0,V_amp,V_freq,,phd3
 
-    et,200,mass21
+    et,200,mass21,,,2
     r,200,mass
 
 ! Geometry
@@ -167,10 +167,13 @@ btol, 1.0e-7
     d,all,ux,0
     d,all,uy,0
     d,all,uz,0
+    d,all,rotx,0
+    d,all,roty,0
+    d,all,rotz,0
 
-    nsel,s,,,102
-    d,all,volt,0
-    nsel,all
+    ! nsel,s,,,102
+    ! d,all,volt,0
+    ! nsel,all
 
 alls
 finish
@@ -181,31 +184,31 @@ finish
 
     ! Step 1
         antype,trans
-        cnvtol,AMPS,1,1e-3
-        cnvtol,u,1,1e-7
-        cnvtol,F,1,1e-7
+        ! cnvtol,AMPS,1,1e-3
+        ! cnvtol,u,1,1e-7
+        ! cnvtol,F,1,1e-7
         outres,all,all
         timint,on
         autots,off
-        deltim,dt
+        deltim,dt_hold
         time,time_hold
         kbc,1
         solve
 
     ! Step 2
         ddele,100,ux
-        ! ddele,100,uy
-        ! ddele,100,uz
+        ddele,100,uy
+        ddele,100,uz
 
         antype,trans
-        acel,g
-        cnvtol,AMPS,1,1e-3
-        cnvtol,u,1,1e-3
+        acel,,,g
+        ! cnvtol,AMPS,1,1e-3
+        ! cnvtol,u,1,1e-3
         ! cnvtol,F,1,1e-7
         outres,all,all
         timint,on
         autots,off
-        deltim,dt/2
+        deltim,dt
         time,time
         kbc,1
         solve

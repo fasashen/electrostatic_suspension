@@ -16,7 +16,7 @@ def read_from_file(fname,header=True,get_time_vector=False):
             time_list.append(float(line.split()[0]))
             data_list.append(float(line.split()[1]))
     if get_time_vector == True:
-        return time_list
+        return time_list, data_list
     else:
         return data_list
 
@@ -78,7 +78,7 @@ def calc_cap_vs_gap(start_gap=1e-6, end_gap=20e-6, numcalc=20):
 
     os.system('capacitance_calc.bat')
 
-    gap_list, cap_list = read_from_file('./output/CAPACITANCE_VS_GAP.txt', False)
+    gap_list, cap_list = read_from_file('./output/CAPACITANCE_VS_GAP.txt', False, True)
     with open('cap_vs_gap_data.txt','w') as f:
         f.truncate()
         n = 0
@@ -89,7 +89,7 @@ def calc_cap_vs_gap(start_gap=1e-6, end_gap=20e-6, numcalc=20):
     return cap_list, gap_list
 
 def plot_cap():
-    gap_list, cap_cae = read_from_file('./output/CAPACITANCE_VS_GAP.txt')
+    gap_list, cap_cae = read_from_file('./output/CAPACITANCE_VS_GAP.txt', False, True)
     cap_plate = plate_capacitance(gap_list)
     fig = plt.figure()
     fig.set_size_inches(10, 10)
@@ -106,7 +106,7 @@ def plot_cap():
 def plate_capacitance(gap_list):
     cap_plate = []
     for gap in gap_list:
-        cap_plate.append(eps0*S/gap/1.2051077275857327)
+        cap_plate.append(eps0*S/gap)
     return cap_plate
 
 def force_theory(ux_list, volt_list, volt_elec):
@@ -118,14 +118,14 @@ def force_theory(ux_list, volt_list, volt_elec):
 
 
 def main():
-    # Capacity versus gap calculation
-    # calc_cap_vs_gap()
+    '''Capacity versus gap calculation'''
+    # calc_cap_vs_gap(10e-6,100e-6)
     # plot_cap()
 
-    # Launch ANSYS simulation
+    '''Launch ANSYS simulation'''
     start_simulation('suspension_3D.bat')
 
-    # Defining vectros to read data to
+    '''Defining vectros to read data to'''
     u = [] 
     volt = []
     volt_rotor = []
@@ -134,8 +134,8 @@ def main():
 
     sides = ["xp","xn", "yp","yn", "zp","zn"]
 
-    # Reading data from files
-    time = read_from_file('./output/volt_rot.txt', True, True)
+    '''Reading data from files'''
+    time, bulk = read_from_file('./output/volt_rot.txt', True, True)
 
     u.append(read_from_file('./output/u_x.txt'))
     u.append(read_from_file('./output/u_y.txt'))
@@ -151,48 +151,55 @@ def main():
         volt.append(read_from_file('./output/volt_'+side+'.txt'))
         force.append(read_from_file('./output/force_'+side+'.txt'))
 
-    force_xsum, volt_xsum, volt_ysum, volt_zsum = [], [], [], []
-    for i,k in zip(force[0], force[1]):
-        force_xsum.append(i+k)
+    volt_xsum, volt_ysum, volt_zsum = [], [], []
+    force_xsum, force_ysum, force_zsum, = [], [], []
+    for xp,xn,yp,yn,zp,zn in zip(force[0], force[1], force[2], force[3], force[4], force[5]):
+        force_xsum.append(xp+xn)
+        force_ysum.append(yp+yn)
+        force_zsum.append(zp+zn)
     for vr,vx,vy,vz in zip(volt_rotor, volt[0], volt[2], volt[4]):
         volt_xsum.append(vr-vx)
         volt_ysum.append(vr-vy)
         volt_zsum.append(vr-vz)
 
-    # Plotting
+    '''Plotting'''
     fig = plt.figure()
     fig.set_size_inches(12, 16)
 
     p1 = fig.add_subplot(411)
     p1.plot(time,u[0],label='$ux$',linewidth=1, color='r')
-    p1.plot(time,u[1],label='$uy$',linewidth=1, color='b')
-    p1.plot(time,u[2],label='$uz$',linewidth=1, color='g')
+    p1.plot(time,u[1],label='$uy$',linewidth=1, color='g')
+    p1.plot(time,u[2],label='$uz$',linewidth=1, color='b')
     p1.set_xlabel("$time, s$", fontsize=15)
     p1.set_ylabel("$u, m$", fontsize=15)
     p1.legend(loc='best',fontsize=15,numpoints=1)
     p1.grid()
 
     p2 = fig.add_subplot(412)
-    p2.plot(time,volt_rotor,label='$volt-rotor$', linewidth=1, color='r')
-    p2.plot(time,volt[0],label='$volt-electrode$',linewidth=1, color='b')
-    p2.plot(time,volt_in[0],label='$volt-in-x$',linewidth=0.5, color='g')
-    p2.plot(time,volt_in[1],label='$volt-in-y$',linewidth=0.5, color='k')
-    p2.plot(time,volt_in[2],label='$volt-in-z$',linewidth=0.5, color='y')
+    p2.plot(time,volt_in[0],label='$volt-in-X$',linewidth=0.5, color='r')
+    p2.plot(time,volt_in[1],label='$volt-in-Y$',linewidth=0.5, color='g')
+    p2.plot(time,volt_in[2],label='$volt-in-Z$',linewidth=0.5, color='b')
+    p2.plot(time,volt_rotor,label='$volt-rotor$', linewidth=1, color='y')
+    p2.plot(time,volt[0],label='$volt-electrode$',linewidth=1, color='c')
     p2.set_xlabel("$time, s$", fontsize=15)
-    p2.set_ylabel("$volt, v$", fontsize=15)
+    p2.set_ylabel("$volt, V$", fontsize=15)
     p2.legend(loc='upper right',fontsize=15,numpoints=1)
     p2.grid()
 
     p3 = fig.add_subplot(413)
-    p3.plot(time,force[0],label='$xpos$',linewidth=1, color='r')
-    p3.plot(time,force[1],label='$xneg$',linewidth=1, color='b')
+    p3.plot(time,volt_zsum,label='$CapVolt-z$',linewidth=1, color='b')
+    p3.plot(time,volt_xsum,label='$CapVolt-x$',linewidth=1, color='r')
+    p3.plot(time,volt_ysum,label='$CapVolt-y$',linewidth=1, color='g')
     p3.set_xlabel("$time, s$", fontsize=15)
-    p3.set_ylabel("$force, N$", fontsize=15)
+    p3.set_ylabel("$volt, V$", fontsize=15)
     p3.legend(loc='upper right',fontsize=15,numpoints=1)
     p3.grid()
 
     p4 = fig.add_subplot(414)
-    p4.plot(time,force_xsum,label='$sum$',linewidth=2, color='k')
+    p4.plot(time,force_zsum,label='$Zsum$',linewidth=2, color='b')
+    p4.plot(time,force_xsum,label='$Xsum$',linewidth=2, color='r')
+    p4.plot(time,force_ysum,label='$Ysum$',linewidth=2, color='g')
+    p4.plot([time[0],time[-1]],[mass*g, mass*g],label='$mg$',linewidth=1, color='k')
     p4.set_xlabel("$time, s$", fontsize=15)
     p4.set_ylabel("$force, N$", fontsize=15)
     p4.legend(loc='upper right',fontsize=15,numpoints=1)
@@ -200,27 +207,37 @@ def main():
 
     fig.savefig('plot',dpi=300)
 
-    # fig2 = plt.figure()
-    # fig2.set_size_inches(12, 14)
-    # p1 = fig2.add_subplot(311)
-    # p1.plot(t_ux,ux,label='$ux$',linewidth=1, color='r')
-    # p1.set_xlabel("$time, s$", fontsize=15)
-    # p1.set_ylabel("$uy, m$", fontsize=15)
-    # p1.legend(loc='upper right',fontsize=15,numpoints=1)
-    # p1.grid()
-    # p2 = fig2.add_subplot(312)
-    # p2.plot(t_ux,uy,label='$uy$',linewidth=1, color='b')
-    # p2.set_xlabel("$time, s$", fontsize=15)
-    # p2.set_ylabel("$uy, m$", fontsize=15)
-    # p2.legend(loc='upper right',fontsize=15,numpoints=1)
-    # p2.grid()
-    # p3 = fig2.add_subplot(313)
-    # p3.plot(t_ux,uz,label='$uz$',linewidth=1, color='g')
-    # p3.set_xlabel("$time, s$", fontsize=15)
-    # p3.set_ylabel("$uz, m$", fontsize=15)
-    # p3.legend(loc='upper right',fontsize=15,numpoints=1)
-    # p3.grid()
-    # fig2.savefig('plot_u',dpi=300)
+    # # fig2 = plt.figure()
+    # # fig2.set_size_inches(12, 14)
+    # # p1 = fig2.add_subplot(311)
+    # # p1.plot(t_ux,ux,label='$ux$',linewidth=1, color='r')
+    # # p1.set_xlabel("$time, s$", fontsize=15)
+    # # p1.set_ylabel("$uy, m$", fontsize=15)
+    # # p1.legend(loc='upper right',fontsize=15,numpoints=1)
+    # # p1.grid()
+    # # p2 = fig2.add_subplot(312)
+    # # p2.plot(t_ux,uy,label='$uy$',linewidth=1, color='b')
+    # # p2.set_xlabel("$time, s$", fontsize=15)
+    # # p2.set_ylabel("$uy, m$", fontsize=15)
+    # # p2.legend(loc='upper right',fontsize=15,numpoints=1)
+    # # p2.grid()
+    # # p3 = fig2.add_subplot(313)
+    # # p3.plot(t_ux,uz,label='$uz$',linewidth=1, color='g')
+    # # p3.set_xlabel("$time, s$", fontsize=15)
+    # # p3.set_ylabel("$uz, m$", fontsize=15)
+    # # p3.legend(loc='upper right',fontsize=15,numpoints=1)
+    # # p3.grid()
+    # # fig2.savefig('plot_u',dpi=300)
+
+    # L = 0.08
+    # R = 3636
+    # w = 500e3
+    # C = 5.5e-11
+    # d0 = 40e-6
+
+    # print(L*w, 1/C/w)
+    # print(L*w - 1/C/w)
+    # print(R/2/L)
 
 
 if __name__ == "__main__":
