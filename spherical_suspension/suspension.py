@@ -117,8 +117,7 @@ def force_theory(ux_list, volt_list, volt_elec):
     return force
 
 
-if __name__ == "__main__":
-
+def main():
     # Capacity versus gap calculation
     # calc_cap_vs_gap()
     # plot_cap()
@@ -222,3 +221,7 @@ if __name__ == "__main__":
     # p3.legend(loc='upper right',fontsize=15,numpoints=1)
     # p3.grid()
     # fig2.savefig('plot_u',dpi=300)
+
+
+if __name__ == "__main__":
+    main()
