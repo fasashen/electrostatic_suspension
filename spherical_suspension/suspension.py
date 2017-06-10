@@ -21,7 +21,6 @@ def read_from_file(fname, header = True, get_time_vector = False):
         return data_list
 
 def ode_dynamic():
-
     time, fx_pos = read_from_file('./output/Fx_pos.txt')
 
     C = eps0*S/d*2
@@ -37,7 +36,6 @@ def ode_dynamic():
     
     # p1.set_xlabel("time, sec", fontsize=15)
     # p1.set_ylabel("displacement, m", fontsize=15)
-
 
     p2 = fig.add_subplot(211)
     p2.plot(time_list ,force_list,marker='o', label="CAE TRANS126",linewidth=2, color='r',markersize=0, mew=0)
@@ -123,7 +121,7 @@ def main():
     # plot_cap()
 
     '''Launch ANSYS simulation'''
-    start_simulation('suspension_3D.bat')
+    # start_simulation('suspension_3D.bat')
 
     '''Defining vectros to write data to'''
     u = [] 

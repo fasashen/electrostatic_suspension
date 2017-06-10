@@ -59,8 +59,8 @@ def calc_dynamic(init_gap=30e-6, mass=8,time=time*2,dt=dt*2):
         f.write('d_max = 100e-6'+'\n')
         f.write('mass = ' +    str(mass)+'\n')
         f.write('init_gap = '+ str(init_gap)  +'\n')
-        f.write('dyntime = ' +    str(time)+'\n')
-        f.write('dyndt = ' +      str(dt)+'\n')
+        f.write('time = ' +    str(time)+'\n')
+        f.write('dt = ' +      str(dt)+'\n')
         f.write('NUM_CALCS = 1' +'\n')
         f.write("ANALYSIS_TYPE = 'dynamic_calc'")
     os.system('pas_susp_start.bat')
@@ -102,7 +102,6 @@ def problem_properties():
     print('q0 =',q0, '| U_cmax =',q0/C,q0_2/C,q0_3/C)
     print(res**2,',',4*ind/C)
     print((10e-6/(EPS_0*S*ind))**0.5)
-
 
 def save_solution(gap_list,cap_cae,force_cae):
     fname = 'sol' +'_S'+ str(S) +'_w'+ str(V_freq) +'_R'+ str(res) +'_I'+ str(ind) +'.txt'
@@ -154,96 +153,121 @@ def plot_dynamic():
     force_list, time_list = read_from_file('./output/dyn_Force_vs_Time.txt',True)
     volt_list, time_list = read_from_file('./output/dyn_Volt_vs_Time.txt',True)
 
-    print(init_gap)
     C = EPS_0*S/init_gap
-    e_ode = odeint(charge, [0.0, 0.0], time_list)[:, 0]
-    U_ode = [-x/C for x in e_ode]
-    F_ode = [x**2/(2*EPS_0*S) for x in e_ode]
+    # e_ode = odeint(charge_ode, [0.0, 0.0], time_list)[:, 0]
+    # U_ode = [-x/C for x in e_ode]
+    # F_ode = [x**2/(2*EPS_0*S) for x in e_ode]
+
+    motion_solution = odeint(motion, [0, 0, -init_gap, 0], time_list)
+
+    y_ode = motion_solution[:,2]
+    e_ode = motion_solution[:,0]
+    U_ode = []
+    for y,e in zip(y_ode,e_ode):
+        C = EPS_0*S/y
+        U_ode.append(e/C)
 
     fig = plt.figure()
     fig.set_size_inches(12, 12)
+
     p1 = fig.add_subplot(311)
-    p1.plot(time_list ,[-init_gap+x for x in uy_list],marker='o', label="FEM trans126",linewidth=2, color='r',markersize=0, mew=0)
-    p1.plot([0, time_list[-1]],[0,0],linewidth=2, color='k')
+    p1.plot(time_list,[-(init_gap-x) for x in uy_list],marker='o', label="$FEM_{trans126}$",linewidth=2, color='r',markersize=0, mew=0)
+    p1.plot(time_list,y_ode,marker='o', label="$ODE$",linewidth=2, color='b',markersize=0, mew=0)
+    # p1.plot([0, time_list[-1]],[0,0],linewidth=2, color='k')
     p1.legend(loc='best',fontsize=15,numpoints=1)
     p1.set_xlabel("time, sec", fontsize=15)
     p1.set_ylabel("displacement, m", fontsize=15)
-    p2 = fig.add_subplot(312)
-    # p2.plot(time_list ,[x-mass*g for x in force_list],marker='o', label="",linewidth=0.5, color='r',markersize=0, mew=0)
-    
-    
-    p2.plot(time_list ,force_list,marker='o', label="",linewidth=1, color='r',markersize=0, mew=0)
-    p2.plot(time_list ,F_ode,marker='o', label="",linewidth=0.5, color='b',markersize=0, mew=0,linestyle='--')
+    p1.grid()
 
-    p2.grid()
-    p2.set_xlabel("time, sec", fontsize=15)
-    p2.set_ylabel("forces sum, N", fontsize=15)
-    p3 = fig.add_subplot(313)
 
-    
-    p3.plot(time_list ,volt_list,marker='o', label="F",linewidth=1, color='r',markersize=0, mew=0)
-    p3.plot(time_list ,U_ode,marker='o', label="F",linewidth=0.5, color='b',markersize=0, mew=0,linestyle='--')
+    # p1 = fig.add_subplot(311)
+    # p1.plot(time_list ,[-init_gap+x for x in uy_list],marker='o', label="FEM trans126",linewidth=2, color='r',markersize=0, mew=0)
+    # p1.plot([0, time_list[-1]],[0,0],linewidth=2, color='k')
+    # p1.legend(loc='best',fontsize=15,numpoints=1)
+    # p1.set_xlabel("time, sec", fontsize=15)
+    # p1.set_ylabel("displacement, m", fontsize=15)
+    # p1.grid()
 
+    # p2 = fig.add_subplot(312)
+    # p2.plot(time_list,force_list, marker='o', label="$F^{e}_{FEM}$", linewidth = 1.0, color='b', markersize=0, mew=0)
+    # p2.plot(time_list,F_ode,      marker='o', label="$F^{e}_{ODE}$", linewidth = 0.5, color='g', markersize=0, mew=0, linestyle='-')
+    # p2.plot(time_list ,[mass*g for x in force_list],marker='o', label="$mg$",linewidth=1, color='r',markersize=0, mew=0)
+    # p2.legend(loc='best',fontsize=15,numpoints=1)
+    # p2.grid()
+    # p2.set_xlabel("time, sec", fontsize=15)
+    # p2.set_ylabel("forces sum, N", fontsize=15)
+
+    p3 = fig.add_subplot(313)    
+    p3.plot(time_list,volt_list,marker='o', label="$U_{FEM}$",linewidth=1, color='r',markersize=0, mew=0)
+    p3.plot(time_list,U_ode,marker='o', label="$U_{ODE}$",linewidth=0.5, color='b',markersize=0, mew=0,linestyle='-')
+    p3.legend(loc='best',fontsize=15,numpoints=1)
     p3.set_xlabel("time, sec", fontsize=15)
     p3.set_ylabel("voltage drop on capacitor, V", fontsize=15)    
     fig.savefig('./saved/dynamic_plot',dpi=300)
     fig.savefig('dynamic_plot',dpi=300)
 
-def charge(y, t):
+def charge_ode(y, t):
      y1, y2 = y
      dydt = [y2, 1/ind*(V_amp*sin(2*pi*V_freq*t) - y1*init_gap/S/EPS_0 - res*y2)]
      return dydt
 
-'''SOLVE CAPACITY'''
+def motion(q, t):
+     e1, e2, y1, y2 = q
+     dydt = [ e2, \
+              1/ind*(V_amp*sin(2*pi*V_freq*t) + e1*y1/S/EPS_0 - res*e2), \
+              y2, \
+              1/(S*2*EPS_0*mass)*e1**2-g ]
+     return dydt
 
-# cap_cae, gap_list = calc_cap_vs_gap(start_gap, end_gap, n)
+def main():
 
-# problem_properties()
+    '''SOLVE CAPACITY'''
 
-# '''SOLVE FORCE'''
-# force_cae, gap_list = calc_force_vs_gap(start_gap, end_gap, n)
-# save_solution(gap_list,cap_cae,force_cae)
+    # cap_cae, gap_list = calc_cap_vs_gap(start_gap, end_gap, n)
 
-# plot_cap()
-# plot_force_vs_gap()
+    # problem_properties()
 
-mass =  0.122395/2/g
-init_gap =  3e-6
-     
-# uy_list, time_list = calc_dynamic(init_gap,mass,dt,dt*2)
+    # '''SOLVE FORCE'''
+    # force_cae, gap_list = calc_force_vs_gap(start_gap, end_gap, n)
+    # save_solution(gap_list,cap_cae,force_cae)
 
-plot_dynamic()
+    # plot_cap()
+    # plot_force_vs_gap()
 
-# C = EPS_0*S/init_gap
-# time_list = list(arange(0,1e-4*32,1/V_freq/32))
+    uy_list, time_list = calc_dynamic(init_gap,mass,time,dt)
+    plot_dynamic()
 
-# e_ode = odeint(charge, [0.0, 0.0], time_list)[:, 0]
-# U_ode = [-x/C for x in e_ode]
-# F_ode = [x**2/(2*EPS_0*S) for x in e_ode]
+    # C = EPS_0*S/init_gap
+    # time_list = list(arange(0,1e-4*32,1/V_freq/32))
 
-# print(1/(ind*C)**0.5/2/pi)
+    # e_ode = odeint(charge, [0.0, 0.0], time_list)[:, 0]
+    # U_ode = [-x/C for x in e_ode]
+    # F_ode = [x**2/(2*EPS_0*S) for x in e_ode]
 
-# gap_list = list(arange(0.1e-6,30e-6,0.1e-6))
-# force_theory = calc_theory_force(gap_list)
+    # print(1/(ind*C)**0.5/2/pi)
 
-# fig = plt.figure()
-# fig.set_size_inches(12, 12)
-# p1 = fig.add_subplot(311)
+    # gap_list = list(arange(0.1e-6,30e-6,0.1e-6))
+    # force_theory = calc_theory_force(gap_list)
 
-# p1.plot(gap_list,force_theory,marker='o', label="$Analytical$",linewidth=1,linestyle='-', color='b',markersize=0, mew=0)
+    # fig = plt.figure()
+    # fig.set_size_inches(12, 12)
+    # p1 = fig.add_subplot(311)
 
-# p2 = fig.add_subplot(312)
-# p2.plot(time_list ,F_ode,marker='o', label="",linewidth=0.5, color='b',markersize=0, mew=0,linestyle='-')
+    # p1.plot(gap_list,force_theory,marker='o', label="$Analytical$",linewidth=1,linestyle='-', color='b',markersize=0, mew=0)
 
-# p3 = fig.add_subplot(313)
-# potential =[]
-# for gap in gap_list:
-#     potential.append(-g*gap-V_amp**2/(2*res*mass*2*pi*V_freq)*arctan((2*pi*V_freq*ind-gap/(2*pi*V_freq*EPS_0*S))/res))
+    # p2 = fig.add_subplot(312)
+    # p2.plot(time_list ,F_ode,marker='o', label="",linewidth=0.5, color='b',markersize=0, mew=0,linestyle='-')
 
-# p3.plot(gap_list, potential)
+    # p3 = fig.add_subplot(313)
+    # potential =[]
+    # for gap in gap_list:
+    #     potential.append(-g*gap-V_amp**2/(2*res*mass*2*pi*V_freq)*arctan((2*pi*V_freq*ind-gap/(2*pi*V_freq*EPS_0*S))/res))
 
-# fig.savefig('plot_testing',dpi=50)
+    # p3.plot(gap_list, potential)
+
+    # fig.savefig('plot_testing',dpi=50)
 
 
-# plt.show()
-
+    # plt.show()
+if __name__ == "__main__":
+    main()

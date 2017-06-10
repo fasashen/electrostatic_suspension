@@ -1,5 +1,0 @@
-d_min = 1e-07
-d_max = 1e-05
-NUM_CALCS = 40
-ANALYSIS_TYPE = 'force_calc'
-d_inc = (d_max-d_min)/(NUM_CALCS-1)

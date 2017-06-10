@@ -1,7 +1,7 @@
 d_max = 100e-6
 mass = 0.006244642857142857
 init_gap = 3e-06
-dyntime = 7.8125e-07
-dyndt = 1.5625e-06
+time = 0.00625078125
+dt = 9.765625e-08
 NUM_CALCS = 1
 ANALYSIS_TYPE = 'dynamic_calc'

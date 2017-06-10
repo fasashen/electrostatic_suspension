@@ -20,7 +20,14 @@ V_freq = 40000
 res = 300
 ind = 20e-4
 
-dt = 1/V_freq/32
-time = 1/V_freq*8
+dt_hold = 1/V_freq/32
+time_hold = 1/V_freq*8
+time_hold = dt_hold
+
+dt = 1/V_freq/256
+time = time_hold + 1/V_freq*250
 
 g = 9.8
+
+mass =  0.122395/2/g
+init_gap =  3e-6

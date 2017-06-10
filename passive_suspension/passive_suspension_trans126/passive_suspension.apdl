@@ -46,7 +46,7 @@ FINISH
     RMORE,GAP10,CAP10,GAP11,CAP11,GAP12,CAP12
     RMORE,GAP13,CAP13,GAP14,CAP14,GAP15,CAP15
     RMORE,GAP16,CAP16,GAP17,CAP17,GAP18,CAP18
-    RMORE,GAP19,CAP19,GAP20,CAP20
+    ! RMORE,GAP19,CAP19,GAP20,CAP20
     type,1
     real,1
     e,102,101
@@ -118,31 +118,32 @@ FINISH
         PARRES,NEW,PARAM_FILE,TXT
     *ENDIF
     *IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
-        et,100,mass21,0,0,4 !2-D mass without rotary inertia
+        et,100,mass21,0,0,2 !2-D mass without rotary inertia
         R,100,mass
         type,100
         real,100
         e,102
         acel,,g
         D,102,UY,0
+        D,102,UX,0
+        D,102,UZ,0
         FINI
 
         /SOLU
-        OUTRES,ALL,all
-        ANTYPE,TRANS
-        AUTOTS,off
-        deltim,dt               
-        time,time            
-        kbc,1
-        solve
-        
+        ! OUTRES,ALL,all
+        ! ANTYPE,TRANS
+        ! AUTOTS,off
+        ! deltim,dt_hold               
+        ! time,time_hold            
+        ! kbc,1
+        ! solve
 
         ddele,102,uy
         OUTRES,ALL,all
         ANTYPE,TRANS
         AUTOTS,off
-        deltim,dyndt               
-        time,time + dyntime           
+        deltim,dt               
+        time,time_hold + time           
         kbc,1
         solve
 
@@ -160,18 +161,10 @@ FINISH
         STORE,MERGE
         LINES,1e6,
         /HEADER, OFF, OFF, OFF, OFF, OFF, OFF
-        /OUTPUT,bulk,txt
-        /OUTPUT
-        /OUTPUT,dyn_UY_vs_Time,txt
-        PRVAR,2  
-        /OUTPUT
-        /OUTPUT,dyn_Force_vs_Time.txt
-        PRVAR,3
-        /OUTPUT
-        /OUTPUT,dyn_Volt_vs_Time.txt
-        PRVAR,4
-        /OUTPUT
-
+        /OUTPUT,bulk,txt $/OUTPUT
+        /OUTPUT,dyn_UY_vs_Time,txt    $PRVAR,2 $/OUTPUT
+        /OUTPUT,dyn_Force_vs_Time.txt $PRVAR,3 $/OUTPUT
+        /OUTPUT,dyn_Volt_vs_Time.txt  $PRVAR,4 $/OUTPUT
         FINI
         /post1
         FORCE_AR(I) = max_forc
