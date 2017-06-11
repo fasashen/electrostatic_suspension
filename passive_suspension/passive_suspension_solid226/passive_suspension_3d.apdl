@@ -5,6 +5,9 @@ FINISH
 /input, ../params_pas_susp.txt
 /input, ../cap_vs_gap_data.txt
 
+ANALYSIS_TYPE = 'dynamic_calc'
+NUM_CALCS = 1
+
 
 *DIM,GAP_AR,ARRAY,NUM_CALCS
 *DIM,FORCE_AR,ARRAY,NUM_CALCS
@@ -31,20 +34,13 @@ FINISH
     *ENDIF
 
 
-    et,101,SOLID226,1001,,,1   ! 20-node "elastic air" brick
-    mp,ex,101,1.e-3            ! MPa
-    mp,prxy,101,0.0            
+    et,101,SOLID226,1001,,,0   ! 20-node "elastic air" brick
+    mp,ex,101,0            ! MPa           
     mp,perx,101,1
-
-    et,102,SOLID186,,1         ! 20-node structural brick
-    mp,ex,102,169e3            ! MPa
-    mp,nuxy,102,0.066
-    mp,dens,102,2.329e-15      ! kg/(um)^3
 
     ! Geometry and meshing
     block,0,a,0,d,,w
-    block,0,a,-b,0,,w
-    vglue,all
+
     numstr,node,1000 
     esize,elsize
 
@@ -52,15 +48,20 @@ FINISH
     lsel,a,,,3
     lsel,a,,,6
     lsel,a,,,8
-    lesize,all,,,2
+    lesize,all,,,numEperGap
+
+    ! lsel,s,,,9,12
+    ! lesize,all,,,numEperLength
+
+    ! lsel,s,,,5
+    ! lsel,a,,,7
+    ! lsel,a,,,2
+    ! lsel,a,,,4
+    ! lesize,all,,,numEperLength*a
 
     type,101
     mat,101
     vmesh,1
-
-    type,102
-    mat,102
-    vmesh,3
 
     ! Electrical BC
     nsel,all
@@ -81,6 +82,7 @@ FINISH
     nsel,all
     d,all,ux,0
     d,all,uz,0
+
     D,Ntop,UY,0
     D,Nbot,UY,0
     D,Nbot,volt,0
@@ -92,19 +94,19 @@ FINISH
     alls
 
     ! Creating curcuit elements
-    ET,2,CIRCU124,0,,,,,   ! DEFINE A RESISTOR
+    ET,2,CIRCU94,0,,,,,1   ! DEFINE A RESISTOR
     R,2,res                       
     TYPE,2
     REAL,2
     E,101,102
 
-    ET,3,CIRCU124,1,,,,,   ! DEFINE AN INDUCTOR
+    ET,3,CIRCU94,1,,,,,1   ! DEFINE AN INDUCTOR
     R,3,ind
     TYPE,3
     REAL,3
     E,102,Ntop
 
-    ET,4,CIRCU124,4,1,,,,  ! DEFINE A VOLTAGE SOURCE
+    ET,4,CIRCU94,4,1,,,,1  ! DEFINE A VOLTAGE SOURCE
     R,4,0,V_amp,V_freq
     TYPE,4
     REAL,4
@@ -129,7 +131,7 @@ FINISH
         !Loadstep2
         OUTRES,ALL,ALL
         deltim,dt/4               
-        time,time+1/V_freq*1
+        time,time*2
         solve
         FINISH
 
@@ -178,16 +180,18 @@ FINISH
         kbc,1
         solve
         
-        ddele,Nbot,uy
-        OUTRES,ALL,all
-        ANTYPE,TRANS
-        AUTOTS,off
-        deltim,dyndt               
-        time,time + dyntime           
-        kbc,1
-        solve
+        ! ddele,Nbot,uy
+        ! OUTRES,ALL,all
+        ! ANTYPE,TRANS
+        ! AUTOTS,off
+        ! deltim,dt               
+        ! time,time        
+        ! kbc,1
+        ! solve
 
         FINISH
+        /post1
+
 
         /POST26
         /OUTPUT
@@ -195,9 +199,9 @@ FINISH
         STORE,MERGE 
         XVAR,1  
         PLVAR,2,
-        RFORCE,3,Nbot,F,Y,Force
+        ESOL,8,50,1008 ,F,Y,FY_8
         STORE,MERGE
-        NSOL,4,Nbot,Volt
+        NSOL,4,102,VOLT,, VOLT_3,
         STORE,MERGE
         LINES,1e6,
         /HEADER, OFF, OFF, OFF, OFF, OFF, OFF
@@ -207,7 +211,7 @@ FINISH
         PRVAR,2  
         /OUTPUT
         /OUTPUT,dyn_Force_vs_Time.txt
-        PRVAR,3
+        PRVAR,8
         /OUTPUT
         /OUTPUT,dyn_Volt_vs_Time.txt
         PRVAR,4

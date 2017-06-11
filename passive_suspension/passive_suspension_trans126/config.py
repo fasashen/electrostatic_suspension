@@ -22,10 +22,10 @@ ind = 20e-4
 
 dt_hold = 1/V_freq/32
 time_hold = 1/V_freq*8
-time_hold = dt_hold
+time_hold = 0
 
-dt = 1/V_freq/256
-time = time_hold + 1/V_freq*250
+dt = 1/V_freq/32
+time = time_hold + 1/V_freq*64
 
 g = 9.8
 

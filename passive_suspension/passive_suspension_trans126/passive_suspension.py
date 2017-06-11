@@ -1,4 +1,5 @@
 from numpy import pi, sin, sinh, cos, arange, subtract, around, exp, insert, arctan
+import matplotlib
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 from config import *
@@ -53,7 +54,7 @@ def calc_force_vs_gap(start_gap=1e-6, end_gap=20e-6, numcalc=20, solid=False):
     force_list, gap_list = read_from_file('./output/force_y.txt')
     return force_list, gap_list
 
-def calc_dynamic(init_gap=30e-6, mass=8,time=time*2,dt=dt*2):
+def calc_dynamic(init_gap,mass,time,dt):
     with open('params_pas_susp.txt','w') as f:
         f.truncate()
         f.write('d_max = 100e-6'+'\n')
@@ -219,7 +220,29 @@ def motion(q, t):
               1/(S*2*EPS_0*mass)*e1**2-g ]
      return dydt
 
+def convergence(init_gap,mass,time,dt_list):
+    uy_conv = []
+    for dt in dt_list:
+        uy_list, time_list = calc_dynamic(init_gap,mass,time,dt)
+        uy_conv.append(uy_list[-1])
+    return uy_conv
+    
+def plot_convergence(dt_list, uy_conv):
+    fig = plt.figure()
+    fig.set_size_inches(13.5, 7)
+    p1 = fig.add_subplot(111)
+    p1.plot(dt_list,uy_conv,marker='o',linewidth=1, color='k',markersize=6, mew=6, linestyle='--')
+    p1.set_xlabel("$Количество\ шагов\ интегрирования\ на\ период\ T=1/\omega$", fontsize=24)
+    p1.set_ylabel("$Перемещение\ в\ контрольной\ точке,\ м$", fontsize=24)
+    p1.grid()
+    fig.savefig('conv_plot',dpi=300)
+
 def main():
+    font = {'family' : 'serif',
+        'weight' : 'normal',
+        'size'   : 16}
+
+    matplotlib.rc('font', **font)
 
     '''SOLVE CAPACITY'''
 
@@ -227,15 +250,22 @@ def main():
 
     # problem_properties()
 
-    # '''SOLVE FORCE'''
+    '''SOLVE FORCE'''
     # force_cae, gap_list = calc_force_vs_gap(start_gap, end_gap, n)
     # save_solution(gap_list,cap_cae,force_cae)
-
     # plot_cap()
     # plot_force_vs_gap()
 
-    uy_list, time_list = calc_dynamic(init_gap,mass,time,dt)
-    plot_dynamic()
+    '''SOLVE CONVEGENCE'''
+    dt_list = [1/V_freq/(x*16) for x in range(1,6)]
+    uy_conv = [-2.39076e-07, 3.96791e-08, 8.3778e-08, 8.94868e-08, 9.01316e-08]
+    # # uy_conv = convergence(init_gap,mass,time,dt_list)
+    dt_list = [1/V_freq/x for x in dt_list]
+    plot_convergence(dt_list, uy_conv)
+
+
+    # uy_list, time_list = calc_dynamic(init_gap,mass,time,dt)
+    # plot_dynamic()
 
     # C = EPS_0*S/init_gap
     # time_list = list(arange(0,1e-4*32,1/V_freq/32))
