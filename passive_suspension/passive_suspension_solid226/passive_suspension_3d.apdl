@@ -48,16 +48,16 @@ NUM_CALCS = 1
     lsel,a,,,3
     lsel,a,,,6
     lsel,a,,,8
-    lesize,all,,,numEperGap
+    lesize,all,,,1
 
     ! lsel,s,,,9,12
-    ! lesize,all,,,numEperLength
+    ! lesize,all,,,10
 
     ! lsel,s,,,5
     ! lsel,a,,,7
     ! lsel,a,,,2
     ! lsel,a,,,4
-    ! lesize,all,,,numEperLength*a
+    ! lesize,all,,,10
 
     type,101
     mat,101

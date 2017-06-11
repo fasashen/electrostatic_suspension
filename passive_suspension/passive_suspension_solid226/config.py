@@ -43,7 +43,7 @@ ind = 20e-4
 
 
 dt = 1/V_freq/64
-time = 1/V_freq*32
+time = 1/V_freq*16
 
 g = 9.8
 

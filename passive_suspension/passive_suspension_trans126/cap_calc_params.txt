@@ -1,4 +1,4 @@
-d_min = 1e-06
-d_max = 1e-05
+d_min = 2.5e-06
+d_max = 3.5e-06
 NUM_CALCS = 20
 d_inc = (d_max-d_min)/(NUM_CALCS-1)

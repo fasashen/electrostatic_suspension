@@ -1,4 +1,4 @@
-EPS_0 = 8.854e-12
+EPS_0 = 8.854187817e-12
 EPS_R = 1
 
 a = 0.005
@@ -11,8 +11,8 @@ end_gap = 10e-6
 
 n = 20
 
-numEperLength = 100
-numEperGap = 2
+numEperLength = 1000
+numEperGap = 4
 
 V_amp = 10
 V_freq = 40000
@@ -24,10 +24,12 @@ dt_hold = 1/V_freq/32
 time_hold = 1/V_freq*8
 time_hold = 0
 
-dt = 1/V_freq/32
-time = time_hold + 1/V_freq*64
+dt = 1/V_freq/256
+time = time_hold + 1/V_freq*1024
 
 g = 9.8
 
 mass =  0.122395/2/g
 init_gap =  3e-6
+
+C0 = EPS_0*S

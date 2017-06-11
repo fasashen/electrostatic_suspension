@@ -161,23 +161,49 @@ def plot_dynamic():
 
     motion_solution = odeint(motion, [0, 0, -init_gap, 0], time_list)
 
+
+    h = abs(((V_amp**2/(2*EPS_0*S*mass*g)-(res*V_freq)**2)**0.5 - ind*V_freq**2)*EPS_0*S)
+    c_0 = S/(4*pi*h)
+    T_0 = (ind*c_0)**0.5
+    T_1 = res*c_0
+    T_2 = (h/g)**0.5
+    nu = T_0/T_2
+
+    a1 = V_amp*(c_0/2/mass/g/h)**0.5
+    a2 = V_freq*T_0
+    a3 = T_1/2/T_0
+
+    # print(nu, a2)
+
+    motion_0_solution = odeint(motion_0, [-h, 0], [x/T_2 for x in time_list], args=(a1, a2, a3))
+
+    y_0_ode = [x*h-h for x in motion_0_solution[:,0]]
+
     y_ode = motion_solution[:,2]
     e_ode = motion_solution[:,0]
     U_ode = []
+    F_ode = []
     for y,e in zip(y_ode,e_ode):
         C = EPS_0*S/y
         U_ode.append(e/C)
+        F_ode.append(e**2/C/y/2)
+
+
+    # print(y_ode[-1]/y_0_ode[-1])
+
 
     fig = plt.figure()
-    fig.set_size_inches(12, 12)
+    fig.set_size_inches(13.5, 16)
 
     p1 = fig.add_subplot(311)
     p1.plot(time_list,[-(init_gap-x) for x in uy_list],marker='o', label="$FEM_{trans126}$",linewidth=2, color='r',markersize=0, mew=0)
-    p1.plot(time_list,y_ode,marker='o', label="$ODE$",linewidth=2, color='b',markersize=0, mew=0)
+    p1.plot(time_list,y_ode,marker='o', label="$ODE$",linewidth=2, color='b',markersize=0, mew=0, linestyle='--')
+    # p1.plot(time_list,y_0_ode,marker='o', label="$ODE_0$",linewidth=2, color='b',markersize=0, mew=0)
     # p1.plot([0, time_list[-1]],[0,0],linewidth=2, color='k')
-    p1.legend(loc='best',fontsize=15,numpoints=1)
-    p1.set_xlabel("time, sec", fontsize=15)
-    p1.set_ylabel("displacement, m", fontsize=15)
+    p1.legend(loc='best',fontsize=22,numpoints=1)
+    p1.set_xlabel("$Время\ t,\ с$", fontsize=24)
+    p1.set_ylabel("$Координата\ y, м$", fontsize=24)
+    p1.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
     p1.grid()
 
 
@@ -189,21 +215,25 @@ def plot_dynamic():
     # p1.set_ylabel("displacement, m", fontsize=15)
     # p1.grid()
 
-    # p2 = fig.add_subplot(312)
-    # p2.plot(time_list,force_list, marker='o', label="$F^{e}_{FEM}$", linewidth = 1.0, color='b', markersize=0, mew=0)
-    # p2.plot(time_list,F_ode,      marker='o', label="$F^{e}_{ODE}$", linewidth = 0.5, color='g', markersize=0, mew=0, linestyle='-')
-    # p2.plot(time_list ,[mass*g for x in force_list],marker='o', label="$mg$",linewidth=1, color='r',markersize=0, mew=0)
-    # p2.legend(loc='best',fontsize=15,numpoints=1)
-    # p2.grid()
-    # p2.set_xlabel("time, sec", fontsize=15)
-    # p2.set_ylabel("forces sum, N", fontsize=15)
+    p2 = fig.add_subplot(312)
+    p2.plot(time_list,force_list, marker='o', label="$F^{e}_{FEM}$", linewidth = 1.0, color='b', markersize=0, mew=0)
+    p2.plot(time_list,F_ode,      marker='o', label="$F^{e}_{ODE}$", linewidth = 0.5, color='g', markersize=0, mew=0, linestyle='-')
+    p2.plot(time_list ,[mass*g for x in force_list],marker='o', label="$mg$",linewidth=1, color='r',markersize=0, mew=0)
+    p2.legend(loc='best',fontsize=22,numpoints=1)
+    p2.grid()
+    p2.set_xlabel("$Время\ t,\ с$", fontsize=24)
+    p2.set_ylabel("$Электричсекая\ сила\ F_e,\ Н$", fontsize=24)
+    p2.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
+
 
     p3 = fig.add_subplot(313)    
     p3.plot(time_list,volt_list,marker='o', label="$U_{FEM}$",linewidth=1, color='r',markersize=0, mew=0)
     p3.plot(time_list,U_ode,marker='o', label="$U_{ODE}$",linewidth=0.5, color='b',markersize=0, mew=0,linestyle='-')
-    p3.legend(loc='best',fontsize=15,numpoints=1)
-    p3.set_xlabel("time, sec", fontsize=15)
-    p3.set_ylabel("voltage drop on capacitor, V", fontsize=15)    
+    p3.legend(loc='best',fontsize=22,numpoints=1)
+    p3.set_xlabel("$Время\ t,\ с$", fontsize=24)
+    p3.set_ylabel("$Напряжение\ на\ электроде\ U,\ В$", fontsize=24)   
+    p3.ticklabel_format(axis='both', style='sci', scilimits=(-2,2)) 
+
     fig.savefig('./saved/dynamic_plot',dpi=300)
     fig.savefig('dynamic_plot',dpi=300)
 
@@ -218,6 +248,11 @@ def motion(q, t):
               1/ind*(V_amp*sin(2*pi*V_freq*t) + e1*y1/S/EPS_0 - res*e2), \
               y2, \
               1/(S*2*EPS_0*mass)*e1**2-g ]
+     return dydt
+
+def motion_0(v, t, a1, a2, a3):
+     v1, v2 = v
+     dydt = [v2, a1**2/(8*a2**2*a3**2*(((a2**2+v1+1)/(2*a2*a3))**2+1))-1]
      return dydt
 
 def convergence(init_gap,mass,time,dt_list):
@@ -246,9 +281,7 @@ def main():
 
     '''SOLVE CAPACITY'''
 
-    # cap_cae, gap_list = calc_cap_vs_gap(start_gap, end_gap, n)
-
-    # problem_properties()
+    # cap_cae, gap_list = calc_cap_vs_gap(2.5e-6, 3.5e-6, 20)
 
     '''SOLVE FORCE'''
     # force_cae, gap_list = calc_force_vs_gap(start_gap, end_gap, n)
@@ -257,15 +290,15 @@ def main():
     # plot_force_vs_gap()
 
     '''SOLVE CONVEGENCE'''
-    dt_list = [1/V_freq/(x*16) for x in range(1,6)]
-    uy_conv = [-2.39076e-07, 3.96791e-08, 8.3778e-08, 8.94868e-08, 9.01316e-08]
-    # # uy_conv = convergence(init_gap,mass,time,dt_list)
-    dt_list = [1/V_freq/x for x in dt_list]
-    plot_convergence(dt_list, uy_conv)
+    # dt_list = [1/V_freq/(x*16) for x in range(1,6)]
+    # uy_conv = [-2.39076e-07, 3.96791e-08, 8.3778e-08, 8.94868e-08, 9.01316e-08]
+    # # # uy_conv = convergence(init_gap,mass,time,dt_list)
+    # dt_list = [1/V_freq/x for x in dt_list]
+    # plot_convergence(dt_list, uy_conv)
 
 
     # uy_list, time_list = calc_dynamic(init_gap,mass,time,dt)
-    # plot_dynamic()
+    plot_dynamic()
 
     # C = EPS_0*S/init_gap
     # time_list = list(arange(0,1e-4*32,1/V_freq/32))
@@ -296,6 +329,9 @@ def main():
     # p3.plot(gap_list, potential)
 
     # fig.savefig('plot_testing',dpi=50)
+
+
+
 
 
     # plt.show()
