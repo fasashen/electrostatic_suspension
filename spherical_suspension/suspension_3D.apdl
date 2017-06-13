@@ -201,7 +201,7 @@ finish
         ddele,100,uz
 
         antype,trans
-        acel,,,g
+        acel,gx,gy,gz
         ! cnvtol,AMPS,1,1e-3
         ! cnvtol,u,1,1e-3
         ! cnvtol,F,1,1e-7

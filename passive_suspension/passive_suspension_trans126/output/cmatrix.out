@@ -2,10 +2,10 @@
  ________________ CMATRIX SOLUTION SUMMARY ___________________           
   
  *** Ground Capacitance Matrix ***
-Self Capacitance of conductor  1. =     0.12645E-07
+Self Capacitance of conductor  1. =     0.44266E-08
 Ground capacitance matrix is stored in 3d array parameter CMATRIX ( 1., 1.,1)
  *** Lumped Capacitance Matrix ***
-Self Capacitance of conductor  1. =     0.12645E-07
+Self Capacitance of conductor  1. =     0.44266E-08
 Lumped capacitance matrix is stored in 3d array parameter CMATRIX ( 1., 1.,2)
 
 Capacitance values are per unit length

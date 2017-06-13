@@ -24,8 +24,8 @@ dt_hold = 1/V_freq/32
 time_hold = 1/V_freq*8
 time_hold = 0
 
-dt = 1/V_freq/256
-time = time_hold + 1/V_freq*1024
+dt = 1/V_freq/64
+time = time_hold + 1/V_freq*16
 
 g = 9.8
 

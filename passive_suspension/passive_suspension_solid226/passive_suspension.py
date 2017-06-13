@@ -125,60 +125,60 @@ font = {'family' : 'serif',
 matplotlib.rc('font', **font)
 
 
-# dt_list = [1/V_freq/(x*8) for x in range(1,12)]
+dt_list = [1/V_freq/(x*8) for x in range(1,12)]
 # v_conv = convergence(init_gap,mass,1/V_freq*8,dt_list)
-# v_conv = [-4.94092, -4.87135, -4.85313, -4.84711, -4.84467, -4.84355, -4.84302, -4.84277, -4.84266, -4.84262, -4.84263]
-# dt_list = [1/V_freq/x for x in dt_list]
+v_conv = [-4.94092, -4.87135, -4.85313, -4.84711, -4.84467, -4.84355, -4.84302, -4.84277, -4.84266, -4.84262, -4.84263]
+dt_list = [1/V_freq/x for x in dt_list]
 # print(v_conv)
-# plot_convergence(dt_list, v_conv)
+plot_convergence(dt_list, v_conv)
 
 # for i in range(1,10):
 #     print(1-v_conv[i]/v_conv[i-1])
 
 # calc_dynamic(init_gap,mass,time,dt)
 
-volt, time = read_from_file('./output/dyn_Volt_vs_Time.txt', True)
-uy, time = read_from_file('./output/dyn_UY_vs_Time.txt', True)
-force, time = read_from_file('./output/dyn_Force_vs_Time.txt', True)
+# volt, time = read_from_file('./output/dyn_Volt_vs_Time.txt', True)
+# uy, time = read_from_file('./output/dyn_UY_vs_Time.txt', True)
+# force, time = read_from_file('./output/dyn_Force_vs_Time.txt', True)
 
-# force = [x*253*2 for x in force]
+# # force = [x*253*2 for x in force]
 
-C = EPS_0*S/init_gap
-e_ode = odeint(charge_ode, [0.0, 0.0], time)[:, 0]
-U_ode = [x/C for x in e_ode]
-# U_ode = [x/C*0.863893771539 for x in e_ode]
-F_ode = [-x**2/(2*EPS_0*S) for x in e_ode]
+# C = EPS_0*S/init_gap
+# e_ode = odeint(charge_ode, [0.0, 0.0], time)[:, 0]
+# U_ode = [x/C for x in e_ode]
+# U_ode = [x/C*0.873893771539 for x in e_ode]
+# F_ode = [-x**2/(2*EPS_0*S)*0.00170663366089 for x in e_ode]
 
-print(force[-1]/F_ode[-1])
-print(volt[-1]/U_ode[-1]*100)
+# print(force[-1]/F_ode[-1])
+# print(volt[-1]/U_ode[-1])
 
-fig = plt.figure()
-fig.set_size_inches(13.5, 21)
-p1 = fig.add_subplot(311)
-# p1.plot(time,uy,marker='o',linewidth=1, color='k',markersize=0, mew=0, linestyle='-')
-# p1.set_xlabel("$Время,\ с$", fontsize=24)
-# p1.set_ylabel("$Перемещение\ тела,\ м$", fontsize=24)
-# p1.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
-# p1.legend(loc='upper right',fontsize=22,numpoints=1)
-# p1.grid()
+# fig = plt.figure()
+# fig.set_size_inches(13.5, 21)
+# p1 = fig.add_subplot(311)
+# # p1.plot(time,uy,marker='o',linewidth=1, color='k',markersize=0, mew=0, linestyle='-')
+# # p1.set_xlabel("$Время,\ с$", fontsize=24)
+# # p1.set_ylabel("$Перемещение\ тела,\ м$", fontsize=24)
+# # p1.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
+# # p1.legend(loc='upper right',fontsize=22,numpoints=1)
+# # p1.grid()
 
-p2 = fig.add_subplot(312)
-p2.plot(time,volt,label='$FEM_{SOLID226}$',marker='o',linewidth=1, color='r',markersize=0, mew=0, linestyle='-')
-p2.plot(time,U_ode,label='$ODE$',marker='o',linewidth=1, color='b',markersize=0, mew=0, linestyle='--')
-p2.set_xlabel("$Время,\ с$", fontsize=24)
-p2.set_ylabel("$Напряжение\ на\ электроде,\ В$", fontsize=24)
-p2.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
-p2.legend(loc='upper right',fontsize=22,numpoints=1)
-p2.grid()
+# p2 = fig.add_subplot(312)
+# p2.plot(time,volt,label='$МКЭ_{SOLID226}$',marker='o',linewidth=1, color='r',markersize=0, mew=0, linestyle='-')
+# p2.plot(time,U_ode,label='$ОДУ$',marker='o',linewidth=1, color='b',markersize=0, mew=0, linestyle='--')
+# p2.set_xlabel("$Время,\ с$", fontsize=24)
+# p2.set_ylabel("$Напряжение\ на\ электроде,\ В$", fontsize=24)
+# p2.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
+# p2.legend(loc='upper right',fontsize=22,numpoints=1)
+# p2.grid()
 
-p3 = fig.add_subplot(313)
-p3.plot(time,force,label='$FEM_{SOLID226}$',marker='o',linewidth=1, color='r',markersize=0, mew=0, linestyle='-')
-p3.plot(time,F_ode,label='$ODE$',marker='o',linewidth=1, color='b',markersize=0, mew=0, linestyle='--')
-p3.set_xlabel("$Время,\ с$", fontsize=24)
-p3.set_ylabel("$Электрическая\ сила,\ Н$", fontsize=24)
-p3.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
-p3.legend(loc='upper right',fontsize=22,numpoints=1)
-p3.grid()
+# p3 = fig.add_subplot(313)
+# p3.plot(time,force,label='$МКЭ_{SOLID226}$',marker='o',linewidth=1, color='r',markersize=0, mew=0, linestyle='-')
+# p3.plot(time,F_ode,label='$ОДУ$',marker='o',linewidth=1, color='b',markersize=0, mew=0, linestyle='--')
+# p3.set_xlabel("$Время,\ с$", fontsize=24)
+# p3.set_ylabel("$Электрическая\ сила,\ Н$", fontsize=24)
+# p3.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
+# p3.legend(loc='upper right',fontsize=22,numpoints=1)
+# p3.grid()
 
 fig.savefig('plot',dpi=300)    
 

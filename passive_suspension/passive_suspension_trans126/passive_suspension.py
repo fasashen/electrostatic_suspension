@@ -116,16 +116,18 @@ def plot_cap():
     cap_cae, gap_list = read_from_file('./output/CAPACITANCE_VS_GAP.txt')
     cap_theory = calc_theory_cap(gap_list, S)
     fig = plt.figure()
-    fig.set_size_inches(10, 10)
+    fig.set_size_inches(13.5, 7)
     p1 = fig.add_subplot(111)
-    p1.plot(gap_list,cap_cae,marker='o',label='$FEM$',linewidth=2, color='r',markersize=6, mew=0)
-    p1.plot(gap_list,cap_theory,marker='o', label='$Parallel$ $plate$ $theory$',linewidth=1,linestyle='--', color='b',markersize=4, mew=0)
-    p1.set_xlabel("$gap, m$", fontsize=15)
-    p1.set_ylabel("$Capacinatce, F$", fontsize=15)
-    p1.legend(loc='upper right',fontsize=15,numpoints=1)
+    p1.plot(gap_list,cap_cae,marker='o',label='$МКЭ_{CMATRIX}$',linewidth=2, color='r',markersize=6, mew=0)
+    p1.plot(gap_list,cap_theory,marker='o', label='$Формула\ плоского\ конденсатора$',linewidth=1,linestyle='--', color='b',markersize=4, mew=0)
+    p1.set_xlabel("$Зазор,\ м$", fontsize=24)
+    p1.set_ylabel("$Емкость,\ Ф$", fontsize=24)
+    p1.legend(loc='upper right',fontsize=22,numpoints=1)
     p1.grid()
-    p1.set_title('$Capacitance$ $vs$ $gap$',fontsize=20)
-    fig.savefig('capacitance_vs_gap',dpi=300)
+    p1.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
+    # p1.set_title('$Capacitance$ $vs$ $gap$',fontsize=20)
+    fig.savefig('pas_susp_trans126_cap_v_gap',dpi=300)
+
     cap_compare = []
     for gap, cae, theory in zip(gap_list, cap_cae, cap_theory):
         cap_compare.append(abs((theory/cae-1)*100))
@@ -135,19 +137,25 @@ def plot_force_vs_gap():
     force_cae, gap_list = read_from_file('./output/force_y.txt')
     force_theory = calc_theory_force(gap_list)
     fig = plt.figure()
-    fig.set_size_inches(10, 6)
+    fig.set_size_inches(13.5, 7)
     p1 = fig.add_subplot(111)
-    p1.plot(gap_list,[x/2 for x in force_cae],marker='o', label="$FEM$ $trans126$",linewidth=2, color='r',markersize=6, mew=0)
-    p1.plot(gap_list,force_theory,marker='o', label="$Analytical$",linewidth=1,linestyle='--', color='b',markersize=4, mew=0)
-    p1.legend(loc='best',fontsize=15,numpoints=1)
-    p1.set_xlabel("$gap, m$", fontsize=15)
-    p1.set_ylabel("$Force, N$", fontsize=15)
-    p1.set_title('$Ponderomotive$ $force$ $vs$ $gap$ $(Fixed$ $plates)$',fontsize=20)
+
+    p1.plot(gap_list,[x/2 for x in force_cae],marker='o', label="$МКЭ_{TRANS126}$",linewidth=2, color='r',markersize=6, mew=0)
+    p1.plot(gap_list,force_theory,marker='o', label="$Аналитическое\ решение\ f(y)$",linewidth=1,linestyle='--', color='b',markersize=4, mew=0)
+
+    p1.plot([gap_list[0],gap_list[-1]],[[mass*g],[mass*g]],marker='o', label="$mg$",linewidth=2,linestyle='-', color='g',markersize=0, mew=0)
+    p1.plot([3e-6,3e-6],[0.0301,mass*g+0.01],marker='o', linewidth=2,linestyle='--', color='k',markersize=0, mew=0)
+    p1.grid()
+    p1.legend(loc='best',fontsize=22,numpoints=1)
+    p1.set_xlabel("$Зазор,\ м$", fontsize=24)
+    p1.set_ylabel("$Электрическая\ сила,\ Н$", fontsize=24)
+    # p1.set_title('$Ponderomotive$ $force$ $vs$ $gap$ $(Fixed$ $plates)$',fontsize=20)
+    p1.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
     # p2 = fig.add_subplot(212)
     # p2.plot(gap_list,force_theory,marker='o', label="",linewidth=1,linestyle='--', color='b',markersize=4, mew=0)
     fname = './saved/plot_force' +'_S'+ str(S) +'_w'+ str(V_freq) +'_R'+ str(res) +'_I'+ str(ind) +'.png'
     fig.savefig(fname, dpi=300)
-    fig.savefig('plot_force',dpi=300)
+    fig.savefig('pas_susp_trans126_force_v_gap',dpi=300)
     
 def plot_dynamic():
     uy_list, time_list = read_from_file('./output/dyn_UY_vs_Time.txt',True)
@@ -167,17 +175,22 @@ def plot_dynamic():
     T_0 = (ind*c_0)**0.5
     T_1 = res*c_0
     T_2 = (h/g)**0.5
-    nu = T_0/T_2
+    mu = T_0/T_2
 
     a1 = V_amp*(c_0/2/mass/g/h)**0.5
     a2 = V_freq*T_0
     a3 = T_1/2/T_0
 
-    # print(nu, a2)
+    print('mu = T0/T2',mu, 'предположение << 1')
+    print('nu = w*T0',a2, 'предположение ~ 1')
+    print('mu:',mu)
+    print('mu:',mu)
+    print('mu:',mu)
 
-    motion_0_solution = odeint(motion_0, [-h, 0], [x/T_2 for x in time_list], args=(a1, a2, a3))
 
-    y_0_ode = [x*h-h for x in motion_0_solution[:,0]]
+    motion_0_solution = odeint(motion_0, [0, 0], [x/T_2 for x in time_list], args=(a1, a2, a3))
+
+    y_0_ode = [x*init_gap-init_gap for x in motion_0_solution[:,0]]
 
     y_ode = motion_solution[:,2]
     e_ode = motion_solution[:,0]
@@ -197,8 +210,8 @@ def plot_dynamic():
 
     p1 = fig.add_subplot(311)
     p1.plot(time_list,[-(init_gap-x) for x in uy_list],marker='o', label="$FEM_{trans126}$",linewidth=2, color='r',markersize=0, mew=0)
-    p1.plot(time_list,y_ode,marker='o', label="$ODE$",linewidth=2, color='b',markersize=0, mew=0, linestyle='--')
-    # p1.plot(time_list,y_0_ode,marker='o', label="$ODE_0$",linewidth=2, color='b',markersize=0, mew=0)
+    p1.plot(time_list,y_ode,marker='o', label="$ОДУ$",linewidth=2, color='b',markersize=0, mew=0, linestyle='--')
+    p1.plot(time_list,y_0_ode,marker='o', label="$Асимп.\ реш.\ 0\ прибл.$",linewidth=2, color='b',markersize=0, mew=0)
     # p1.plot([0, time_list[-1]],[0,0],linewidth=2, color='k')
     p1.legend(loc='best',fontsize=22,numpoints=1)
     p1.set_xlabel("$Время\ t,\ с$", fontsize=24)
@@ -266,11 +279,11 @@ def plot_convergence(dt_list, uy_conv):
     fig = plt.figure()
     fig.set_size_inches(13.5, 7)
     p1 = fig.add_subplot(111)
-    p1.plot(dt_list,uy_conv,marker='o',linewidth=1, color='k',markersize=6, mew=6, linestyle='--')
+    p1.plot(dt_list,uy_conv,marker='o',linewidth=1, color='k',markersize=12, mew=0, linestyle='--')
     p1.set_xlabel("$Количество\ шагов\ интегрирования\ на\ период\ T=1/\omega$", fontsize=24)
     p1.set_ylabel("$Перемещение\ в\ контрольной\ точке,\ м$", fontsize=24)
     p1.grid()
-    fig.savefig('conv_plot',dpi=300)
+    fig.savefig('pas_susp_trans126_conv',dpi=300)
 
 def main():
     font = {'family' : 'serif',
@@ -281,7 +294,7 @@ def main():
 
     '''SOLVE CAPACITY'''
 
-    # cap_cae, gap_list = calc_cap_vs_gap(2.5e-6, 3.5e-6, 20)
+    # cap_cae, gap_list = calc_cap_vs_gap(1e-6, 10e-6, 20)
 
     '''SOLVE FORCE'''
     # force_cae, gap_list = calc_force_vs_gap(start_gap, end_gap, n)
@@ -290,9 +303,10 @@ def main():
     # plot_force_vs_gap()
 
     '''SOLVE CONVEGENCE'''
-    # dt_list = [1/V_freq/(x*16) for x in range(1,6)]
-    # uy_conv = [-2.39076e-07, 3.96791e-08, 8.3778e-08, 8.94868e-08, 9.01316e-08]
-    # # # uy_conv = convergence(init_gap,mass,time,dt_list)
+    # dt_list = [1/V_freq/(x*4) for x in range(1,16)]
+    # uy_conv = [-4.64194e-07, -1.19303e-07, -4.06072e-08, -1.2279e-08, 1.13863e-10, 6.82641e-09, 1.08161e-08, 1.33589e-08, 1.51865e-08, 1.6e-08, 1.70612e-08, 1.72109e-08, 1.79263e-08, 1.80152e-08, 1.7774e-08]
+    # # uy_conv = convergence(init_gap,mass,time,dt_list)
+    # print(uy_conv)
     # dt_list = [1/V_freq/x for x in dt_list]
     # plot_convergence(dt_list, uy_conv)
 

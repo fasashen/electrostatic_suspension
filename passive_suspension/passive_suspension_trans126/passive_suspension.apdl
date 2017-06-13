@@ -146,6 +146,7 @@ FINISH
         deltim,dt               
         time,time_hold + time           
         kbc,1
+        ! TRNOPT,full,,,,,HHT
         solve
 
         FINISH

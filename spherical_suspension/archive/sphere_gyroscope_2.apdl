@@ -67,7 +67,7 @@ FINISH
 	    et,104,CIRCU124,4,1,,,,  ! DEFINE A VOLTAGE SOURCE
 	    r,104,0,V_amp,V_freq
 
-	    et,200,mass21
+	    et,200,mass21,,,2
 	    r,200,mass
 
 	! Geometry

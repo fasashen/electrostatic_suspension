@@ -6,7 +6,7 @@ import os
   
 def read_from_file(fname, header = True, get_time_vector = False):
     '''
-    Reads the results of capacitance calculation
+    Reads the results from files
     '''
     time_list, data_list = [], []
     with open(fname,'r') as f:
@@ -114,7 +114,6 @@ def force_theory(ux_list, volt_list, volt_elec):
         force.append(f)
     return force
 
-
 def main():
     '''Capacity versus gap calculation'''
     # calc_cap_vs_gap(10e-6,100e-6)
@@ -199,7 +198,7 @@ def main():
     p4.legend(loc='upper right',fontsize=15,numpoints=1)
     p4.grid()
 
-    fig.savefig('plot',dpi=300)
+    fig.savefig('plot',dpi=200)
 
     # # fig2 = plt.figure()
     # # fig2.set_size_inches(12, 14)

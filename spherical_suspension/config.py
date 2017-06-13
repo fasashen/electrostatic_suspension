@@ -21,11 +21,14 @@ phd3 = -pi/3
 
 mass = 0.000001
 g = 9.8
+gx = 6.3
+gy = 0
+gz = 6.3
 
 dt = 1/V_freq/16
 dt_hold = dt
 time_hold = 1/V_freq*32
-time = time_hold  + 1/V_freq*5120
+time = time_hold  + 1/V_freq*15120
 
 S = 2*3.1415*a*h
 C0 = eps0*S
