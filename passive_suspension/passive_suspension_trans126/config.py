@@ -24,12 +24,12 @@ dt_hold = 1/V_freq/32
 time_hold = 1/V_freq*8
 time_hold = 0
 
-dt = 1/V_freq/64
-time = time_hold + 1/V_freq*16
+dt = 1/V_freq/420
+time = time_hold + 1/V_freq*512
 
 g = 9.8
 
 mass =  0.122395/2/g
 init_gap =  3e-6
 
-C0 = EPS_0*S
+C0 = 4.425744022121485784379828e-14

@@ -169,8 +169,8 @@ def plot_dynamic():
 
     motion_solution = odeint(motion, [0, 0, -init_gap, 0], time_list)
 
-
-    h = abs(((V_amp**2/(2*EPS_0*S*mass*g)-(res*V_freq)**2)**0.5 - ind*V_freq**2)*EPS_0*S)
+    h = abs(((-V_amp**2/(2*EPS_0*S*mass*g)-(res*V_freq)**2)**0.5 - ind*V_freq**2)*EPS_0*S)
+    # h = init_gap
     c_0 = S/(4*pi*h)
     T_0 = (ind*c_0)**0.5
     T_1 = res*c_0
@@ -183,13 +183,8 @@ def plot_dynamic():
 
     print('mu = T0/T2',mu, 'предположение << 1')
     print('nu = w*T0',a2, 'предположение ~ 1')
-    print('mu:',mu)
-    print('mu:',mu)
-    print('mu:',mu)
-
 
     motion_0_solution = odeint(motion_0, [0, 0], [x/T_2 for x in time_list], args=(a1, a2, a3))
-
     y_0_ode = [x*init_gap-init_gap for x in motion_0_solution[:,0]]
 
     y_ode = motion_solution[:,2]
@@ -201,17 +196,16 @@ def plot_dynamic():
         U_ode.append(e/C)
         F_ode.append(e**2/C/y/2)
 
-
-    # print(y_ode[-1]/y_0_ode[-1])
-
+    y_approx = odeint(motion_approx, [-h, 0], time_list)[:,0]
 
     fig = plt.figure()
     fig.set_size_inches(13.5, 16)
 
     p1 = fig.add_subplot(311)
-    p1.plot(time_list,[-(init_gap-x) for x in uy_list],marker='o', label="$FEM_{trans126}$",linewidth=2, color='r',markersize=0, mew=0)
+    p1.plot(time_list,[-(init_gap-x) for x in uy_list],marker='o', label="$МКЭ_{TRANS126}$",linewidth=2, color='r',markersize=0, mew=0)
     p1.plot(time_list,y_ode,marker='o', label="$ОДУ$",linewidth=2, color='b',markersize=0, mew=0, linestyle='--')
-    p1.plot(time_list,y_0_ode,marker='o', label="$Асимп.\ реш.\ 0\ прибл.$",linewidth=2, color='b',markersize=0, mew=0)
+    p1.plot(time_list,y_approx,marker='o', label="$Прибл.$",linewidth=2, color='g',markersize=0, mew=0, linestyle='--')
+    # p1.plot(time_list,y_0_ode,marker='o', label="$Асимп.\ реш.\ 0\ прибл.$",linewidth=2, color='b',markersize=0, mew=0)
     # p1.plot([0, time_list[-1]],[0,0],linewidth=2, color='k')
     p1.legend(loc='best',fontsize=22,numpoints=1)
     p1.set_xlabel("$Время\ t,\ с$", fontsize=24)
@@ -256,17 +250,26 @@ def charge_ode(y, t):
      return dydt
 
 def motion(q, t):
-     e1, e2, y1, y2 = q
-     dydt = [ e2, \
-              1/ind*(V_amp*sin(2*pi*V_freq*t) + e1*y1/S/EPS_0 - res*e2), \
-              y2, \
-              1/(S*2*EPS_0*mass)*e1**2-g ]
-     return dydt
+    e1, e2, y1, y2 = q
+    dydt = [ e2, \
+            1/ind*(V_amp*sin(2*pi*V_freq*t) + e1*y1/S/EPS_0 - res*e2), \
+            y2, \
+            1/(S*2*EPS_0*mass)*e1**2-g ]
+    return dydt
 
 def motion_0(v, t, a1, a2, a3):
-     v1, v2 = v
-     dydt = [v2, a1**2/(8*a2**2*a3**2*(((a2**2+v1+1)/(2*a2*a3))**2+1))-1]
-     return dydt
+    v1, v2 = v
+    dydt = [v2, a1**2/(8*a2**2*a3**2*(((a2**2+v1+1)/(2*a2*a3))**2+1))-1]
+    return dydt
+
+def motion_approx(y, t):
+    y1, y2 = y
+    dydt = [y2, e_approx(y1,t)**2/(2*EPS_0*S*mass) - g]
+    return dydt
+
+def e_approx(y,t):
+    e = sin(2*pi*V_freq*t)*V_amp/((ind*V_freq**2+y/EPS_0/S)**2 + (res*V_freq)**2)**0.5
+    return e
 
 def convergence(init_gap,mass,time,dt_list):
     uy_conv = []
@@ -294,8 +297,7 @@ def main():
 
     '''SOLVE CAPACITY'''
 
-    # cap_cae, gap_list = calc_cap_vs_gap(1e-6, 10e-6, 20)
-
+    # cap_cae, gap_list = calc_cap_vs_gap(2.5e-6, 3.2e-6, 20)
     '''SOLVE FORCE'''
     # force_cae, gap_list = calc_force_vs_gap(start_gap, end_gap, n)
     # save_solution(gap_list,cap_cae,force_cae)
@@ -303,9 +305,10 @@ def main():
     # plot_force_vs_gap()
 
     '''SOLVE CONVEGENCE'''
-    # dt_list = [1/V_freq/(x*4) for x in range(1,16)]
-    # uy_conv = [-4.64194e-07, -1.19303e-07, -4.06072e-08, -1.2279e-08, 1.13863e-10, 6.82641e-09, 1.08161e-08, 1.33589e-08, 1.51865e-08, 1.6e-08, 1.70612e-08, 1.72109e-08, 1.79263e-08, 1.80152e-08, 1.7774e-08]
-    # # uy_conv = convergence(init_gap,mass,time,dt_list)
+    # dt_list = [1/V_freq/(x*64) for x in range(1,12)]
+    # # uy_conv = [-4.64194e-07, -1.19303e-07, -4.06072e-08, -1.2279e-08, 1.13863e-10, 6.82641e-09, 1.08161e-08, 1.33589e-08, 1.51865e-08, 1.6e-08, 1.70612e-08, 1.72109e-08, 1.79263e-08, 1.80152e-08, 1.7774e-08]
+    # # uy_conv = convergence(init_gap,mass,1/V_freq*8,dt_list)
+    # # uy_conv = [7.46374e-09, 8.07461e-09, 8.32658e-09, 8.40536e-09, 8.43752e-09, 8.45266e-09, 8.46039e-09, 8.46449e-09, 8.46669e-09, 8.46781e-09, 8.46832e-09]
     # print(uy_conv)
     # dt_list = [1/V_freq/x for x in dt_list]
     # plot_convergence(dt_list, uy_conv)
