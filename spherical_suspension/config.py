@@ -21,9 +21,9 @@ phd3 = -pi/3
 
 mass = 0.000001
 g = 9.8
-gx = 6.3
+gx = 4
 gy = 0
-gz = 6.3
+gz = g
 
 dt = 1/V_freq/16
 dt_hold = dt

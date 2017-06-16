@@ -1,0 +1,188 @@
+FINISH
+/CLEAR,NOSTART
+
+/input, ../config.py
+/input, ../params_pas_susp.txt
+/input, ../cap_vs_gap_data.txt
+
+
+*DIM,GAP_AR,ARRAY,NUM_CALCS
+*DIM,FORCE_AR,ARRAY,NUM_CALCS
+
+*IF,ANALYSIS_TYPE,EQ,'force_calc',THEN
+    /FILNAME,force_calc
+    /TITLE,force_calc
+*ENDIF
+*IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
+    /FILNAME,pas_susp_dynamics
+    /TITLE,pas_susp_dynamics
+*ENDIF
+
+*DO,I,1,NUM_CALCS
+    /PREP7
+    BTOL, 1.000000e-006
+
+    *IF,ANALYSIS_TYPE,EQ,'force_calc',THEN
+        d = d_min + (I-1)*d_inc
+    *ENDIF
+    *IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
+        d = init_gap
+    *ENDIF
+
+    N,101,0,d,0
+    N,102,0,0,0
+    N,103,-d_max,0,0
+    N,104,-d_max,d,0
+    N,100,-d_max/2,-dmax/2,0
+    alls
+    ET,1,TRANS126
+    KEYOPT,1,2,2    ! degree-of-freedom set: UY-VOLT
+    KEYOPT,1,3,0    ! Use capacitance versus gap data points: GAP1, CAP1, GAP2, CAP2 ... GAP20, CAP20
+    KEYOPT,1,6,0    ! Full stiffness method
+    R,1,0,0,d,,,
+    RMORE,C0
+    ! RMORE,GAP1,CAP1,GAP2,CAP2,GAP3,CAP3
+    ! RMORE,GAP4,CAP4,GAP5,CAP5,GAP6,CAP6
+    ! RMORE,GAP7,CAP7,GAP8,CAP8,GAP9,CAP9
+    ! RMORE,GAP10,CAP10,GAP11,CAP11,GAP12,CAP12
+    ! RMORE,GAP13,CAP13,GAP14,CAP14,GAP15,CAP15
+    ! RMORE,GAP16,CAP16,GAP17,CAP17,GAP18,CAP18
+    ! RMORE,GAP19,CAP19,GAP20,CAP20
+    type,1
+    real,1
+    e,102,101
+
+    ! Creating curcuit elements
+    ET,2,CIRCU124,0,,,,,   ! DEFINE A RESISTOR
+    R,2,res                       
+    TYPE,2
+    REAL,2
+    E,103,104
+
+    ET,3,CIRCU124,1,,,,,   ! DEFINE AN INDUCTOR
+    R,3,ind
+    TYPE,3
+    REAL,3
+    E,104,101
+
+    ET,4,CIRCU124,4,1,,,,  ! DEFINE A VOLTAGE SOURCE
+    R,4,0,V_amp,V_freq
+    TYPE,4
+    REAL,4
+    E,102,103,100
+    nsel,all
+    alls
+
+    ! Constraints
+    D,101,UY,0
+    D,102,volt,0
+    *IF,ANALYSIS_TYPE,EQ,'force_calc',THEN
+        D,102,UY,0
+
+        FINI
+        /SOLU
+
+        ANTYPE,TRANS
+        AUTOTS,off
+        deltim,dt               
+        time,time            
+        kbc,1
+        solve
+        OUTRES,ALL,ALL
+        deltim,dt/4               
+        time,time+1/V_freq*1
+        solve
+        FINISH
+
+        /POST26
+        NUMVAR, 200
+        RFORCE,2,101,F,Y,Force
+        STORE,MERGE 
+        XVAR,1  
+        PLVAR,2,
+        *get,max_forc,vari,2,extrem,vmax
+        FINI
+        /post1
+        ! nsel,,,,101
+        ! FSUM
+        ! *GET,Force_Y,FSUM,0,ITEM,FY
+        ! nsel,all
+        /HEADER, OFF, OFF, OFF, OFF, OFF, OFF
+        /OUTPUT,status.txt
+        *status,i
+        /OUTPUT
+        FORCE_AR(I) = max_forc
+        GAP_AR(I) = d
+        FINISH
+        PARSAV,ALL,PARAM_FILE,TXT
+        /CLEAR,NOSTART
+        PARRES,NEW,PARAM_FILE,TXT
+    *ENDIF
+    *IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
+        et,100,mass21,0,0,2 !2-D mass without rotary inertia
+        R,100,mass
+        type,100
+        real,100
+        e,102
+        acel,,g
+        D,102,UY,0
+        D,102,UX,0
+        D,102,UZ,0
+        FINI
+
+        /SOLU
+        ! OUTRES,ALL,all
+        ! ANTYPE,TRANS
+        ! AUTOTS,off
+        ! deltim,dt_hold               
+        ! time,time_hold            
+        ! kbc,1
+        ! solve
+
+        ddele,102,uy
+        OUTRES,ALL,all
+        ANTYPE,TRANS
+        AUTOTS,off
+        deltim,dt               
+        time,time_hold + time           
+        kbc,1
+        ! TRNOPT,full,,,,,HHT
+        solve
+
+        FINISH
+
+        /POST26
+        /OUTPUT
+        NSOL,2,102,U,Y, UY_2,   
+        STORE,MERGE 
+        XVAR,1  
+        PLVAR,2,
+        RFORCE,3,101,F,Y,Force
+        STORE,MERGE
+        NSOL,4,101,Volt
+        STORE,MERGE
+        LINES,1e6,
+        /HEADER, OFF, OFF, OFF, OFF, OFF, OFF
+        /OUTPUT,bulk,txt $/OUTPUT
+        /OUTPUT,dyn_UY_vs_Time,txt    $PRVAR,2 $/OUTPUT
+        /OUTPUT,dyn_Force_vs_Time.txt $PRVAR,3 $/OUTPUT
+        /OUTPUT,dyn_Volt_vs_Time.txt  $PRVAR,4 $/OUTPUT
+        FINI
+        /post1
+        FORCE_AR(I) = max_forc
+        GAP_AR(I) = d
+        FINISH
+
+    *ENDIF
+
+*ENDDO
+
+*IF,ANALYSIS_TYPE,EQ,'force_calc',THEN
+    /POST1
+    *CFOPEN,force_y,TXT
+    *VWRITE,GAP_AR(1),FORCE_AR(1)
+    (F30.25,' ',F30.25)
+    *CFCLOS
+*ENDIF
+*IF,ANALYSIS_TYPE,EQ,'dynamic_calc',THEN
+*ENDIF

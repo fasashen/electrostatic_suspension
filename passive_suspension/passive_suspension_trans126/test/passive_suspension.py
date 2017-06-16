@@ -154,7 +154,7 @@ def plot_force_vs_gap():
     # p2 = fig.add_subplot(212)
     # p2.plot(gap_list,force_theory,marker='o', label="",linewidth=1,linestyle='--', color='b',markersize=4, mew=0)
     fname = './saved/plot_force' +'_S'+ str(S) +'_w'+ str(V_freq) +'_R'+ str(res) +'_I'+ str(ind) +'.png'
-    fig.savefig(fname, dpi=300)
+    # fig.savefig(fname, dpi=300)
     fig.savefig('pas_susp_trans126_force_v_gap',dpi=300)
     
 def plot_dynamic():
@@ -170,6 +170,7 @@ def plot_dynamic():
     motion_solution = odeint(motion, [0, 0, -init_gap, 0], time_list)
 
     h = abs(((-V_amp**2/(2*EPS_0*S*mass*g)-(res*V_freq)**2)**0.5 - ind*V_freq**2)*EPS_0*S)
+    print(h)
     # h = init_gap
     c_0 = S/(4*pi*h)
     T_0 = (ind*c_0)**0.5
@@ -198,25 +199,13 @@ def plot_dynamic():
 
     y_approx = odeint(motion_approx, [-h, 0], time_list)[:,0]
 
-    y_fem = [-(init_gap-x) for x in uy_list]
-
-    y_error = []
-    for fem, ode in zip(y_fem,y_ode):
-        error = (fem - ode)/(ode)*100
-        y_error.append(error)
-    U_error = []
-    for fem, ode in zip(volt_list[200000:250000],U_ode[200000:250000]):
-        error = fem - ode
-        U_error.append(error)
-    
-
     fig = plt.figure()
-    fig.set_size_inches(13.5, 7)
+    fig.set_size_inches(13.5, 16)
 
-    p1 = fig.add_subplot(111)
-    p1.plot(time_list,y_fem,marker='o', label="$МКЭ_{TRANS126}$",linewidth=2, color='r',markersize=0, mew=0)
-    p1.plot(time_list,y_ode,marker='o', label="$ОДУ_{численное}$",linewidth=2, color='b',markersize=0, mew=0, linestyle='--')
-    # p1.plot(time_list,y_approx,marker='o', label="$Прибл.$",linewidth=2, color='g',markersize=0, mew=0, linestyle='--')
+    p1 = fig.add_subplot(311)
+    p1.plot(time_list,[-(init_gap-x) for x in uy_list],marker='o', label="$МКЭ_{TRANS126}$",linewidth=2, color='r',markersize=0, mew=0)
+    p1.plot(time_list,y_ode,marker='o', label="$ОДУ$",linewidth=2, color='b',markersize=0, mew=0, linestyle='--')
+    p1.plot(time_list,y_approx,marker='o', label="$Прибл.$",linewidth=2, color='g',markersize=0, mew=0, linestyle='--')
     # p1.plot(time_list,y_0_ode,marker='o', label="$Асимп.\ реш.\ 0\ прибл.$",linewidth=2, color='b',markersize=0, mew=0)
     # p1.plot([0, time_list[-1]],[0,0],linewidth=2, color='k')
     p1.legend(loc='best',fontsize=22,numpoints=1)
@@ -224,30 +213,7 @@ def plot_dynamic():
     p1.set_ylabel("$Координата\ y, м$", fontsize=24)
     p1.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
     p1.grid()
-    fig.savefig('pas_susp_trans126_u',dpi=300)
 
-
-    fig = plt.figure()
-    fig.set_size_inches(13.5, 7)
-    p8 = fig.add_subplot(111)
-    p8.plot(time_list,y_error,marker='o', linewidth=2, color='r',markersize=0, mew=0)
-    p8.legend(loc='best',fontsize=22,numpoints=1)
-    p8.set_xlabel("$Время\ t,\ с$", fontsize=24)
-    p8.set_ylabel("$Отклонение\ от\ ОДУ,\ \%$", fontsize=24)
-    p8.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
-    p8.grid()
-    fig.savefig('pas_susp_trans126_u_error',dpi=300)
-
-    fig = plt.figure()
-    fig.set_size_inches(8, 7)
-    p9 = fig.add_subplot(111)
-    p9.plot(time_list[200000:250000],U_error,marker='o', linewidth=2, color='r',markersize=0, mew=0)
-    p9.legend(loc='best',fontsize=22,numpoints=1)
-    p9.set_xlabel("$Время\ t,\ с$", fontsize=24)
-    p9.set_ylabel("$Отклонение\ от\ ОДУ,\ \%$", fontsize=24)
-    p9.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
-    p9.grid()
-    fig.savefig('pas_susp_trans126_volt_error',dpi=300)
 
     # p1 = fig.add_subplot(311)
     # p1.plot(time_list ,[-init_gap+x for x in uy_list],marker='o', label="FEM trans126",linewidth=2, color='r',markersize=0, mew=0)
@@ -257,60 +223,27 @@ def plot_dynamic():
     # p1.set_ylabel("displacement, m", fontsize=15)
     # p1.grid()
 
-    print(len(force_list))
+    p2 = fig.add_subplot(312)
+    p2.plot(time_list,force_list, marker='o', label="$F^{e}_{FEM}$", linewidth = 1.0, color='b', markersize=0, mew=0)
+    p2.plot(time_list,F_ode,      marker='o', label="$F^{e}_{ODE}$", linewidth = 0.5, color='g', markersize=0, mew=0, linestyle='-')
+    p2.plot(time_list ,[mass*g for x in force_list],marker='o', label="$mg$",linewidth=1, color='r',markersize=0, mew=0)
+    p2.legend(loc='best',fontsize=22,numpoints=1)
+    p2.grid()
+    p2.set_xlabel("$Время\ t,\ с$", fontsize=24)
+    p2.set_ylabel("$Электричсекая\ сила\ F_e,\ Н$", fontsize=24)
+    p2.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
 
-    fig = plt.figure()
-    fig.set_size_inches(13.5, 7)
-    p3 = fig.add_subplot(111)
-    p3.plot(time_list,force_list, marker='o', label="$F^{e}_{МКЭ}$", linewidth = 2, color='r', markersize=0, mew=0)
-    p3.plot(time_list,F_ode,      marker='o', label="$F^{e}_{ОДУ}$", linewidth = 2, color='b', markersize=0, mew=0, linestyle='--')
-    p3.plot(time_list,[mass*g for x in force_list],marker='o', label="$mg$",linewidth=1, color='k',markersize=0, mew=0)
+
+    p3 = fig.add_subplot(313)    
+    p3.plot(time_list,volt_list,marker='o', label="$U_{FEM}$",linewidth=1, color='r',markersize=0, mew=0)
+    p3.plot(time_list,U_ode,marker='o', label="$U_{ODE}$",linewidth=0.5, color='b',markersize=0, mew=0,linestyle='-')
     p3.legend(loc='best',fontsize=22,numpoints=1)
-    p3.grid()
     p3.set_xlabel("$Время\ t,\ с$", fontsize=24)
-    p3.set_ylabel("$Электричсекая\ сила\ F_e,\ Н$", fontsize=24)
-    p3.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
-    fig.savefig('pas_susp_trans126_force',dpi=300)
-
-    fig = plt.figure()
-    fig.set_size_inches(8, 7)
-    p4 = fig.add_subplot(111)
-    p4.plot(time_list[10000:12000],force_list[10000:12000], marker='o', label="$F^{e}_{МКЭ}$", linewidth = 2, color='r', markersize=0, mew=0)
-    p4.plot(time_list[10000:12000],F_ode[10000:12000],      marker='o', label="$F^{e}_{ОДУ}$", linewidth = 2, color='b', markersize=0, mew=0, linestyle='--')
-    p4.plot(time_list[10000:12000],[mass*g for x in force_list[10000:12000]],marker='o', label="$mg$",linewidth=1, color='k',markersize=0, mew=0)
-    p4.legend(loc='best',fontsize=22,numpoints=1)
-    p4.grid()
-    p4.set_xlabel("$Время\ t,\ с$", fontsize=24)
-    p4.set_ylabel("$Электричсекая\ сила\ F_e,\ Н$", fontsize=24)
-    p4.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
-    fig.savefig('pas_susp_trans126_force_zoom',dpi=300)
-
-    fig = plt.figure()
-    fig.set_size_inches(8, 7)
-    p5 = fig.add_subplot(111)    
-    p5.plot(time_list[200000:250000],volt_list[200000:250000],marker='o', label="$U_{МКЭ}$",linewidth=2, color='r',markersize=0, mew=0)
-    p5.plot(time_list[200000:250000],U_ode[200000:250000],marker='o', label="$U_{ОДУ}$",linewidth=2, color='b',markersize=0, mew=0,linestyle='--')
-    p5.legend(loc='best',fontsize=22,numpoints=1)
-    p5.set_xlabel("$Время\ t,\ с$", fontsize=24)
-    p5.set_ylabel("$Напряжение\ на\ электроде\ U,\ В$", fontsize=24)   
-    p5.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
-    p5.grid()
-    fig.savefig('pas_susp_trans126_volt_zoom',dpi=300)
-
-
-    fig = plt.figure()
-    fig.set_size_inches(13.5, 7)
-    p6 = fig.add_subplot(111)    
-    p6.plot(time_list,volt_list,marker='o', label="$U_{МКЭ}$",linewidth=2, color='r',markersize=0, mew=0)
-    p6.plot(time_list,U_ode,marker='o', label="$U_{ОДУ}$",linewidth=2, color='b',markersize=0, mew=0,linestyle='-')
-    p6.legend(loc='best',fontsize=22,numpoints=1)
-    p6.set_xlabel("$Время\ t,\ с$", fontsize=24)
-    p6.set_ylabel("$Напряжение\ на\ электроде\ U,\ В$", fontsize=24)   
-    p6.grid()
-    p6.ticklabel_format(axis='both', style='sci', scilimits=(-2,2)) 
+    p3.set_ylabel("$Напряжение\ на\ электроде\ U,\ В$", fontsize=24)   
+    p3.ticklabel_format(axis='both', style='sci', scilimits=(-2,2)) 
 
     # fig.savefig('./saved/dynamic_plot',dpi=300)
-    fig.savefig('pas_susp_trans126_volt',dpi=300)
+    fig.savefig('dynamic_plot',dpi=300)
 
 def charge_ode(y, t):
      y1, y2 = y
@@ -332,7 +265,7 @@ def motion_0(v, t, a1, a2, a3):
 
 def motion_approx(y, t):
     y1, y2 = y
-    dydt = [y2, e_approx(y1,t)**2/(2*EPS_0*S*mass) - g]
+    dydt = [y2, -e_approx(y1,t)**2/(2*EPS_0*S*mass) + g]
     return dydt
 
 def e_approx(y,t):
@@ -365,7 +298,7 @@ def main():
 
     '''SOLVE CAPACITY'''
 
-    # cap_cae, gap_list = calc_cap_vs_gap(2.5e-6, 3.2e-6, 20)
+    # cap_cae, gap_list = calc_cap_vs_gap(4.5e-6, 7e-6, 20)
     '''SOLVE FORCE'''
     # force_cae, gap_list = calc_force_vs_gap(start_gap, end_gap, n)
     # save_solution(gap_list,cap_cae,force_cae)
@@ -381,11 +314,12 @@ def main():
     # dt_list = [1/V_freq/x for x in dt_list]
     # plot_convergence(dt_list, uy_conv)
 
-
-    # uy_list, time_list = calc_dynamic(init_gap,mass,time,dt)
+    # h = abs(((-V_amp**2/(2*EPS_0*S*mass*g)-(res*V_freq)**2)**0.5 - ind*V_freq**2)*EPS_0*S)
+    # print(h)
+    # h = abs(((V_amp**2/(2*EPS_0*S*mass*g)-(res*V_freq)**2)**0.5 - ind*V_freq**2)*EPS_0*S)
+    # print(h)
+    uy_list, time_list = calc_dynamic(init_gap,mass,time,dt)
     plot_dynamic()
-
-    print(1/V_freq/400)
 
     # C = EPS_0*S/init_gap
     # time_list = list(arange(0,1e-4*32,1/V_freq/32))

@@ -1,4 +1,5 @@
 from numpy import pi, sin, sinh, cos, arange, subtract, around, exp, insert, arctan
+import matplotlib
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
 from config import *
@@ -59,6 +60,25 @@ def charge(y, t):
      dydt = [y2, 1/ind*(V_amp*sin(2*pi*V_freq*t) - y1*d/S/eps0 - res*y2)]
      return dydt
 
+def sphere_approx(y,t):
+    C_0 = eps0*S*d
+    B = V_amp/(d*C_0*V_freq*(res**2+(ind*V_freq-1/C_0/V_freq)**2)**0.5)
+    i1, i2, y1, y2, q = y
+    dydt = [i2, \
+            1/ind*( B*y2*cos(2*pi*V_freq*t) - B*V_freq*y1*sin(2*pi*V_freq*t) - i1*1/C_0 - res*i2 ),\
+            y2,\
+            -g-q**2*d/(y1+d)/S/eps0/2,\
+            i1]
+    return dydt
+
+def sphere_super_approx(y,t):
+    Q = 1/(V_freq*eps0*S/d*res)
+    A = V_amp**2*Q/(4*V_freq*res**2*eps0*d*mass)
+    y1, y2 = y
+    dydt = [y2, -g - A*(1-cos(2*pi*2*V_freq*t)*y1)]
+    return dydt
+
+
 def start_simulation(name):
     os.system(name)
 
@@ -115,6 +135,12 @@ def force_theory(ux_list, volt_list, volt_elec):
     return force
 
 def main():
+    font = {'family' : 'serif',
+        'weight' : 'normal',
+        'size'   : 16}
+
+    matplotlib.rc('font', **font)
+
     '''Capacity versus gap calculation'''
     # calc_cap_vs_gap(10e-6,100e-6)
     # plot_cap()
@@ -155,50 +181,70 @@ def main():
         volt_ysum.append(vr-vy)
         volt_zsum.append(vr-vz)
 
+
+    # motion_solution = odeint(sphere_approx, [0, 0, 0, 0, 0], time)[:,2]
+    # motion_solution = odeint(sphere_super_approx, [0, 0], time)[:,0]
+    # print(motion_solution)
+
+
     '''Plotting'''
     fig = plt.figure()
-    fig.set_size_inches(12, 16)
+    fig.set_size_inches(13.5, 7)
 
-    p1 = fig.add_subplot(411)
-    p1.plot(time,u[0],label='$ux$',linewidth=1, color='r')
-    p1.plot(time,u[1],label='$uy$',linewidth=1, color='g')
-    p1.plot(time,u[2],label='$uz$',linewidth=1, color='b')
-    p1.set_xlabel("$time, s$", fontsize=15)
-    p1.set_ylabel("$u, m$", fontsize=15)
-    p1.legend(loc='best',fontsize=15,numpoints=1)
+    p1 = fig.add_subplot(111)
+    p1.plot(time,u[0],label='$x_{МКЭ}$',linewidth=2, color='r')
+    p1.plot(time,u[1],label='$y_{МКЭ}$',linewidth=2, color='g')
+    p1.plot(time,u[2],label='$z_{МКЭ}$',linewidth=2, color='b')
+    # p1.plot(time,motion_solution,label='$x_{МКЭ}$',linewidth=1, color='k')
+    p1.set_xlabel("$Время\ t,\ с$", fontsize=24)
+    p1.set_ylabel("$Координата,\ м$", fontsize=24)
+    p1.legend(loc='best',fontsize=22,numpoints=1)
+    p1.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
     p1.grid()
+    fig.savefig('sphere_susp_u',dpi=300)
 
-    p2 = fig.add_subplot(412)
+    fig = plt.figure()
+    fig.set_size_inches(13.5, 7)
+    p2 = fig.add_subplot(111)
     p2.plot(time,volt_in[0],label='$volt-in-X$',linewidth=0.5, color='r')
     p2.plot(time,volt_in[1],label='$volt-in-Y$',linewidth=0.5, color='g')
     p2.plot(time,volt_in[2],label='$volt-in-Z$',linewidth=0.5, color='b')
     p2.plot(time,volt_rotor,label='$volt-rotor$', linewidth=1, color='y', linestyle='--')
     p2.plot(time,volt[0],label='$volt-electrode$',linewidth=1, color='c')
-    p2.set_xlabel("$time, s$", fontsize=15)
-    p2.set_ylabel("$volt, V$", fontsize=15)
-    p2.legend(loc='upper right',fontsize=15,numpoints=1)
+    p2.set_xlabel("$Время\ t,\ с$", fontsize=24)
+    p2.set_ylabel("$volt, V$", fontsize=24)
+    p2.legend(loc='upper right',fontsize=22,numpoints=1)
+    p2.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
     p2.grid()
+    # fig.savefig('sphere_susp_volt_all',dpi=200)
 
-    p3 = fig.add_subplot(413)
-    p3.plot(time,volt_zsum,label='$CapVolt-z$',linewidth=1, color='b')
-    p3.plot(time,volt_xsum,label='$CapVolt-x$',linewidth=1, color='r')
-    p3.plot(time,volt_ysum,label='$CapVolt-y$',linewidth=1, color='g')
-    p3.set_xlabel("$time, s$", fontsize=15)
-    p3.set_ylabel("$volt, V$", fontsize=15)
-    p3.legend(loc='upper right',fontsize=15,numpoints=1)
+    fig = plt.figure()
+    fig.set_size_inches(13.5, 7)
+    p3 = fig.add_subplot(111)
+    p3.plot(time,volt_zsum,label='$U_{МКЭ}^x$',linewidth=1, color='b')
+    p3.plot(time,volt_xsum,label='$U_{МКЭ}^y$',linewidth=1, color='r')
+    p3.plot(time,volt_ysum,label='$U_{МКЭ}^z$',linewidth=1, color='g')
+    p3.set_xlabel("$Время\ t,\ с$", fontsize=24)
+    p3.set_ylabel("$Напряжение\ на\ конденсаторе,\ В$", fontsize=24)
+    p3.legend(loc='upper right',fontsize=22,numpoints=1)
+    p3.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
     p3.grid()
+    fig.savefig('sphere_susp_volt',dpi=300)
 
-    p4 = fig.add_subplot(414)
-    p4.plot(time,force_zsum,label='$Zsum$',linewidth=2, color='b')
-    p4.plot(time,force_xsum,label='$Xsum$',linewidth=2, color='r')
-    p4.plot(time,force_ysum,label='$Ysum$',linewidth=2, color='g')
+    fig = plt.figure()
+    fig.set_size_inches(13.5, 7)
+    p4 = fig.add_subplot(111)
+    p4.plot(time,force_zsum,label='$F_{МКЭ}^x$',linewidth=2, color='b')
+    p4.plot(time,force_xsum,label='$F_{МКЭ}^y$',linewidth=2, color='r')
+    p4.plot(time,force_ysum,label='$F_{МКЭ}^z$',linewidth=2, color='g')
     p4.plot([time[0],time[-1]],[mass*g, mass*g],label='$mg$',linewidth=1, color='k')
-    p4.set_xlabel("$time, s$", fontsize=15)
-    p4.set_ylabel("$force, N$", fontsize=15)
-    p4.legend(loc='upper right',fontsize=15,numpoints=1)
+    p4.set_xlabel("$Время\ t,\ с$", fontsize=24)
+    p4.set_ylabel("$Электрическая\ сила,\ Н$", fontsize=24)
+    p4.legend(loc='upper right',fontsize=22,numpoints=1)
+    p4.ticklabel_format(axis='both', style='sci', scilimits=(-2,2))
     p4.grid()
 
-    fig.savefig('plot',dpi=200)
+    fig.savefig('sphere_susp_force',dpi=300)
 
     # # fig2 = plt.figure()
     # # fig2.set_size_inches(12, 14)
